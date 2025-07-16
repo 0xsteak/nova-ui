@@ -1,0 +1,9 @@
+dist/
+.vscode/*.d.luau
+sourcemap.json
+temp-sourcemap.json
+rblx-src/
+temp-src/
+private/
+**/__pycache__
+dev/*.luau

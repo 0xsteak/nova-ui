@@ -1,0 +1,23 @@
+{
+  generator: {
+    name: "dense",
+    column_span: 0xFFFFFFFF
+  },
+  bundle: {
+    require_mode: {
+      name: "path"
+    }
+  },
+  rules: [
+    "convert_index_to_field",
+    "remove_comments",
+    "remove_function_call_parens",
+    "remove_types",
+    "remove_spaces",
+    "remove_unused_variable",
+    {
+      rule: "rename_variables",
+      globals: ["$default", "$roblox"]
+    }
+  ],
+}

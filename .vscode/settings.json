@@ -1,0 +1,18 @@
+{
+  "luau-lsp.sourcemap.enabled": true,
+  "luau-lsp.types.robloxSecurityLevel": "RobloxScriptSecurity",
+  "luau-lsp.completion.imports.requireStyle": "alwaysRelative",
+  "luau-lsp.types.definitionFiles": [
+    ".vscode/secretTypes.d.luau"
+  ],
+  "luau-lsp.ignoreGlobs": [
+    "private/archive/**",
+    "rblx-src/**"
+  ],
+  "taskExplorer.enabledTasks": {
+    "make": false,
+    "python": false,
+    "workspace": true
+  },
+  "makefile.configureOnOpen": false
+}
