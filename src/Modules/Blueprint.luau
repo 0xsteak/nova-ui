@@ -120,6 +120,7 @@ export type BlueprintData = {
 }
 
 type self = {
+    Class: "Blueprint",
     Instance: Instance,
 }
 
@@ -128,6 +129,7 @@ export type Blueprint = typeof(setmetatable({} :: self, {} :: BlueprintImpl))
 -- -- -- -- --
 
 local Blueprint = {} :: BlueprintImpl
+Blueprint.__index = Blueprint
 
 local function buildFromData(blueprintData: BlueprintData): Instance
     local instance = Instance.new(blueprintData.Class)
@@ -153,6 +155,7 @@ end
 function Blueprint.new(blueprintData: BlueprintData): Blueprint
     local self = setmetatable({}, Blueprint) :: Blueprint
     
+    self.Class = "Blueprint"
     self.Instance = buildFromData(blueprintData)
 
     return self

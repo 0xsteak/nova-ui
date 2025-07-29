@@ -8,11 +8,9 @@ convertType = sys.argv[1] if len(sys.argv) > 1 else None
 srcPath = sys.argv[2] if len(sys.argv) > 2 else None
 convertedPath = sys.argv[3] if len(sys.argv) > 3 else None
 
-# Convert string requires to roblox requires
-def rblx_require(path: str, destination: str):
-    # Clean if exists
-    for filename in os.listdir(destination):
-        file_path = os.path.join(destination, filename)
+def cleandir(path: str):
+    for filename in os.listdir(path):
+        file_path = os.path.join(path, filename)
         try:
             if os.path.isfile(file_path) or os.path.islink(file_path):
                 os.unlink(file_path)
@@ -20,6 +18,12 @@ def rblx_require(path: str, destination: str):
                 shutil.rmtree(file_path)
         except Exception as e:
             print('Failed to delete %s. Reason: %s' % (file_path, e))
+
+# Convert string requires to roblox requires
+def rblx_require(path: str, destination: str):
+    # Clean if exists
+    if os.path.exists(destination):
+        cleandir(destination)
             
     # Create path if it doesnt exist
     Path(destination).mkdir(parents=True, exist_ok=True)

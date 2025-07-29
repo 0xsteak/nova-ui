@@ -4,13 +4,14 @@ local Signal = require("./Signal")
 
 type DragControllerImpl = {
     __index: DragControllerImpl,
-    new: (object: GuiObject, dragHandle: GuiObject) -> DragController,
+    new: (adornee: GuiObject, dragHandle: GuiObject) -> DragController,
     Destroy: (self: DragController) -> ()
 }
 
 type self = {
-    Object: GuiObject,
-    Handle: GuiObject,
+    Class: "DragController",
+    Adornee: GuiObject,
+    DragHandle: GuiObject,
     Enabled: boolean,
     Locked: boolean,
     IsDragging: boolean,
@@ -23,7 +24,7 @@ export type DragController = typeof(setmetatable({} :: self, {} :: DragControlle
 
 -- -- -- -- --
 
-local DragController = {}
+local DragController = {} :: DragControllerImpl
 DragController.__index = DragController
 
 local UserInputService = game:GetService("UserInputService")
@@ -32,11 +33,12 @@ local Controllers: {DragController} = {}
 local beganInputType = if UserInputService.TouchEnabled then Enum.UserInputType.Touch else Enum.UserInputType.MouseButton1
 local changedInputType = if UserInputService.TouchEnabled then Enum.UserInputType.Touch else Enum.UserInputType.MouseMovement
 
-function DragController.new(object: GuiObject, dragHandle: GuiObject): DragController
+function DragController.new(adornee: GuiObject, dragHandle: GuiObject): DragController
     local self = setmetatable({}, DragController) :: DragController
 
-    self.Object = object
-    self.Handle = dragHandle
+    self.Class = "DragController"
+    self.Adornee = adornee
+    self.DragHandle = dragHandle
     self.Enabled = true
     self.Locked = false
     self.IsDragging = false
@@ -44,40 +46,25 @@ function DragController.new(object: GuiObject, dragHandle: GuiObject): DragContr
     
     local connections: {RBXScriptConnection} = {}
 
-    -- local isDragging = false
-    -- local dragOffset: Vector2
-
     connections[1] = dragHandle.InputBegan:Connect(function(input)
         if input.UserInputType == beganInputType and self.Enabled and not self.Locked then
             if beganInputType == Enum.UserInputType.Touch and input.UserInputState ~= Enum.UserInputState.Begin then
                 return
             end
 
-            self.DragOffset = Vector2.new(object.AbsolutePosition.X - input.Position.X + object.AbsoluteSize.X * object.AnchorPoint.X, object.AbsolutePosition.Y - input.Position.Y + object.AbsoluteSize.Y * object.AnchorPoint.Y)
+            self.DragOffset = Vector2.new(adornee.AbsolutePosition.X - input.Position.X + adornee.AbsoluteSize.X * adornee.AnchorPoint.X, adornee.AbsolutePosition.Y - input.Position.Y + adornee.AbsoluteSize.Y * adornee.AnchorPoint.Y)
 
-            -- isDragging = true
             self.IsDragging = true
-
 
             local connection: RBXScriptConnection
             connection = input.Changed:Connect(function()
                 if input.UserInputState ~= Enum.UserInputState.End then return end
 
-                -- isDragging = false
                 self.IsDragging = false
                 connection:Disconnect()
             end)
         end
     end)
-
-    -- connections[2] = UserInputService.InputChanged:Connect(function(input)
-    --     if input.UserInputType == changedInputType and isDragging then
-    --         local newPos = UDim2.fromOffset(input.Position.X + dragOffset.X, input.Position.Y + dragOffset.Y)
-
-    --         object.Position = newPos
-    --         self.DragChanged:Fire(newPos)
-    --     end
-    -- end)
 
     self.Connections = connections
 
@@ -109,7 +96,7 @@ UserInputService.InputChanged:Connect(function(input)
         local dragOffset = controller.DragOffset
         local newPos = UDim2.fromOffset(input.Position.X + dragOffset.X, input.Position.Y + dragOffset.Y)
 
-        controller.Object.Position = newPos
+        controller.Adornee.Position = newPos
         controller.DragChanged:Fire(newPos)
 
         return

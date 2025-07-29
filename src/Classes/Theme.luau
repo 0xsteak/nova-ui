@@ -19,6 +19,7 @@ export type ThemeColors = {
 }
 
 type self = {
+    Class: "Theme",
     Name: string,
     Author: string,
     HighlightLocked: boolean,
@@ -29,7 +30,7 @@ export type Theme = typeof(setmetatable({} :: self, {} :: ThemeImpl))
 
 -- -- -- -- --
 
-local Theme = {}
+local Theme = {} :: ThemeImpl
 Theme.__index = Theme
 
 local HttpService = game:GetService("HttpService")
@@ -37,6 +38,7 @@ local HttpService = game:GetService("HttpService")
 function Theme.new(name: string, author: string, highlightLocked: boolean, colors: ThemeColors): Theme
     local self = setmetatable({}, Theme) :: Theme
 
+    self.Class = "Theme"
     self.Name = name
     self.Author = author
     self.HighlightLocked = highlightLocked

@@ -4,7 +4,7 @@ local Signal = require("./Signal")
 
 type ResizeControllerImpl = {
     __index: ResizeControllerImpl,
-    new: (object: GuiObject) -> ResizeController,
+    new: (adornee: GuiObject) -> ResizeController,
     Destroy: (self: ResizeController) -> ()
 }
 
@@ -20,7 +20,8 @@ type Directions = {
 }
 
 type self = {
-    Object: GuiObject,
+    Class: "ResizeController",
+    Adornee: GuiObject,
     Directions: Directions,
     Enabled: boolean,
     Locked: boolean,
@@ -50,7 +51,7 @@ type Direction = "Left" | "Right" | "Top" | "Bottom" | "TopLeft" | "BottomLeft" 
 
 -- -- -- -- --
 
-local ResizeController = {}
+local ResizeController = {} :: ResizeControllerImpl
 ResizeController.__index = ResizeController
 
 local Controllers: {ResizeController} = {}
@@ -157,10 +158,11 @@ local function getOffset(direction: Direction, mousePos: Vector3, startPos: Vect
     return Vector2.zero, Vector2.zero
 end
 
-function ResizeController.new(object: GuiObject): ResizeController
+function ResizeController.new(adornee: GuiObject): ResizeController
     local self = setmetatable({}, ResizeController) :: ResizeController
 
-    self.Object = object
+    self.Class = "ResizeController"
+    self.Adornee = adornee
     self.Directions = {
         Left = true,
         Right = true,
@@ -186,8 +188,8 @@ function ResizeController.new(object: GuiObject): ResizeController
         if input.UserInputType == Enum.UserInputType.MouseButton1 and self.Enabled and not self.Locked and self.ResizeDirection then
             local startInfo = self.StartInfo
 
-            startInfo.Position = object.AbsolutePosition
-            startInfo.Size = object.AbsoluteSize
+            startInfo.Position = adornee.AbsolutePosition
+            startInfo.Size = adornee.AbsoluteSize
             startInfo.MousePos = input.Position
             
             self.IsResizing = true
@@ -228,10 +230,10 @@ local lastDirection
 UserInputService.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseMovement then
         for _, controller in Controllers do
-            if not controller.Enabled or controller.Locked or not controller.Object.Visible then continue end
+            if not controller.Enabled or controller.Locked or not controller.Adornee.Visible then continue end
 
             if controller.IsResizing then
-                local object = controller.Object
+                local adornee = controller.Adornee
                 local resizeDirection = controller.ResizeDirection
                 local startInfo = controller.StartInfo
                 local startPos = startInfo.Position
@@ -249,18 +251,18 @@ UserInputService.InputChanged:Connect(function(input)
                 local newSizeX = math.round(startSize.X + offsetX)
 				local newSizeY = math.round(startSize.Y + offsetY)
 
-                local newPos = UDim2.fromOffset(math.round(startPos.X - offsetX * resizePoint.X + (newSizeX * object.AnchorPoint.X)), math.round(startPos.Y - offsetY * resizePoint.Y + (newSizeY * object.AnchorPoint.Y)))
+                local newPos = UDim2.fromOffset(math.round(startPos.X - offsetX * resizePoint.X + (newSizeX * adornee.AnchorPoint.X)), math.round(startPos.Y - offsetY * resizePoint.Y + (newSizeY * adornee.AnchorPoint.Y)))
                 local newSize = UDim2.fromOffset(newSizeX, newSizeY)
 
-                object.Position = newPos
-				object.Size = newSize
+                adornee.Position = newPos
+				adornee.Size = newSize
 
                 controller.ResizeChanged:Fire(newPos, newSize)
 
                 return
             end
 
-            local direction = getDirection(input.Position, controller.Object, controller.Directions)
+            local direction = getDirection(input.Position, controller.Adornee, controller.Directions)
             controller.ResizeDirection = direction
             if direction then
                 lastDirection = direction

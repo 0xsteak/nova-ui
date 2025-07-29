@@ -44,7 +44,7 @@ export type ScrollView = typeof(setmetatable({} :: self, {} :: ScrollViewImpl))
 
 -- -- -- -- --
 
-local ScrollView = {}
+local ScrollView = {} :: ScrollViewImpl
 ScrollView.__index = ScrollView
 
 local UserInputService = game:GetService("UserInputService")
