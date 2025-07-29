@@ -5,6 +5,7 @@ type IconImpl = {
 }
 
 type self = {
+    Class: "Icon",
     Image: string,
     RectSize: Vector2,
     RectOffset: Vector2
@@ -14,12 +15,13 @@ export type Icon = typeof(setmetatable({} :: self, {} :: IconImpl))
 
 -- -- -- -- --
 
-local Icon = {}
+local Icon = {} :: IconImpl
 Icon.__index = Icon
 
-function Icon.new(image: string, rectSize: Vector2?, rectOffset: Vector2?)
+function Icon.new(image: string, rectSize: Vector2?, rectOffset: Vector2?): Icon
     local self = setmetatable({}, Icon) :: Icon
 
+    self.Class = "Icon"
     self.Image = image
     self.RectSize = rectSize or Vector2.zero
     self.RectOffset = rectOffset or Vector2.zero

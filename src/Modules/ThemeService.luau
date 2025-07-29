@@ -99,7 +99,7 @@ end
 
 ThemeService.ThemeChanged = Signal.new()
 
-Registry.SettingChanged:Connect(function(setting, value: number)
+Registry.SettingChanged:Connect(function(setting, value)
     if setting == "CurrentThemeId" then
         TableUtils.MergeInto(CurrentTheme, Registry.Themes[value].Colors)
         ThemeService.ThemeChanged:Fire(CurrentTheme)

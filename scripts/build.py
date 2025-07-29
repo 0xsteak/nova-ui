@@ -11,6 +11,9 @@ src = "src"
 rblxSrc = "rblx-src"
 outDir = "dist"
 
+if not os.path.exists(outDir):
+    os.mkdir(outDir)
+
 def source(fileName: str):
     zipPath = os.path.join(outDir, fileName)
     
@@ -21,8 +24,9 @@ def source(fileName: str):
         for root, _, files in os.walk(src):
             for file in files:
                 path = os.path.join(root, file)
-                relPath = os.path.relpath(path, os.path.dirname(src))
-                archive.write(path, arcname=relPath)
+                relPath = os.path.relpath(path, src)
+                inZipPath = os.path.join("Nova", relPath)
+                archive.write(path, arcname=inZipPath)
     print(f"Archived at '{zipPath}'")
     
 def bundle(fileName: str):
@@ -41,7 +45,6 @@ def bundle(fileName: str):
     shutil.rmtree("temp-src")
     
 def rbxm(fileName: str):
-    print(fileName)
     projectFile = "rbxm-build.project.json"
     output = subprocess.run(["rojo", "build", "-o", os.path.join(outDir, fileName), projectFile], capture_output=True, text=True)
     if output.stdout:
