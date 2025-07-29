@@ -70,7 +70,7 @@ export type WindowOptions = {
 local Window = {} :: WindowImpl
 Window.__index = Window
 
-local BaseBlueprint: Blueprint.Blueprint = {
+local BaseBlueprint: Blueprint.Blueprint = Blueprint.new({
     Class = "CanvasGroup",
     Active = true,
     AnchorPoint = Vector2.new(0.5, 0.5),
@@ -139,7 +139,7 @@ local BaseBlueprint: Blueprint.Blueprint = {
         Position = UDim2.new(0, 0, 0, 30),
         Size = UDim2.new(1, 0, 1, -30)
     }
-}
+})
 
 local topBarIconsSheet = "rbxassetid://106110894885348"
 local closeIcon = Icon.new(topBarIconsSheet, Vector2.new(16, 16), Vector2.zero)
@@ -221,7 +221,7 @@ function Window.new(options: WindowOptions): Window
 
     local self: Window = setmetatable({}, Window) :: Window
 
-    local instance = Blueprint.Build(BaseBlueprint) :: instance
+    local instance = BaseBlueprint:Build() :: instance
     local topBar = instance.TopBar
     local icon = topBar.Icon
     local buttons = topBar.Buttons
