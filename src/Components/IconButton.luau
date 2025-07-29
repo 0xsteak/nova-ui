@@ -34,7 +34,7 @@ type instance = CanvasGroup & {
 local IconButton = {} :: IconButtonImpl
 IconButton.__index = IconButton
 
-local BaseBlueprint: Blueprint.Blueprint = {
+local BaseBlueprint: Blueprint.Blueprint = Blueprint.new({
     Class = "CanvasGroup",
     Size = UDim2.new(0, 25, 0, 25),
     Visible = false,
@@ -57,7 +57,7 @@ local BaseBlueprint: Blueprint.Blueprint = {
             Size = UDim2.new(0, 16, 0, 16)
         },
     }
-}
+})
 
 function IconButton.new(icon: Icon.Icon, callback: () -> ()): IconButton
     local self = setmetatable({}, IconButton) :: IconButton
@@ -65,7 +65,7 @@ function IconButton.new(icon: Icon.Icon, callback: () -> ()): IconButton
     self.Callback = callback or function() end
     self.Enabled = true
 
-    local instance = Blueprint.Build(BaseBlueprint) :: instance
+    local instance = BaseBlueprint:Build() :: instance
     local Button = instance.Button
     local buttonIcon = Button.Icon
 

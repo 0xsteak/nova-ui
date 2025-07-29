@@ -49,7 +49,7 @@ ScrollView.__index = ScrollView
 
 local UserInputService = game:GetService("UserInputService")
 
-local BaseBlueprint: Blueprint.Blueprint = {
+local BaseBlueprint: Blueprint.Blueprint = Blueprint.new({
     Class = "Frame",
     Name = "ScrollView",
     Active = true,
@@ -111,7 +111,7 @@ local BaseBlueprint: Blueprint.Blueprint = {
             }
         }
     }
-}
+})
 
 local function updateVerticalScrollBar(self: ScrollView)
     local instance = self.Instance
@@ -162,7 +162,7 @@ function ScrollView.new(options: ScrollViewOptions): ScrollView
 
     local self = setmetatable({}, ScrollView) :: ScrollView
 
-    local instance = Blueprint.Build(BaseBlueprint) :: instance
+    local instance = BaseBlueprint:Build() :: instance
     local view = instance.View
     local verticalSB = instance.VerticalScrollBar
     local verticalSBThumb = verticalSB.Thumb
