@@ -12,6 +12,7 @@ type ScrollViewImpl = {
     SetScrollingDirection: (self: ScrollView, direction: Enum.ScrollingDirection) -> (),
     SetScrollingEnabled: (self: ScrollView, enabled: boolean) -> (),
     SetScrollBarThickness: (self: ScrollView, thickness: number) -> (),
+    SetParent: (self: ScrollView, parent: Instance) -> (),
     Destroy: (self: ScrollView) -> ()
 }
 
@@ -468,6 +469,10 @@ function ScrollView.SetScrollBarThickness(self: ScrollView, thickness: number)
     verticalSB.Size = UDim2.new(0, thickness, 1, -20)
     horizontalSB.Position = UDim2.new(0, 10, 1, -thickness - 5)
     horizontalSB.Size = UDim2.new(1, -25, 0, thickness)
+end
+
+function ScrollView.SetParent(self: ScrollView, parent: Instance)
+    self.Instance.Parent = parent
 end
 
 function ScrollView.Destroy(self: ScrollView)
