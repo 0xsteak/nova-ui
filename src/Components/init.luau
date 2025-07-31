@@ -9,6 +9,8 @@ return setmetatable({}, {
             return require("@self/IconButton")
         elseif index == "ScrollView" then
             return require("@self/ScrollView")
+        elseif index == "Container" then
+            return require("@self/Container")
         else
             error(`Component '{index}' does not exist`)
         end

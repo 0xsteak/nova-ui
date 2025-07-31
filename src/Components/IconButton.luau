@@ -7,9 +7,10 @@ local Tweener = require("../Modules/Tweener")
 
 type IconButtonImpl = {
     __index: IconButtonImpl,
-    new: (icon: Icon.Icon, callback: () -> ()) -> IconButton,
+    new: (icon: Icon.Icon, callback: (() -> ())?) -> IconButton,
     Disable: (self: IconButton) -> (),
     Enable: (self: IconButton) -> (),
+    SetParent: (self: IconButton, parent: Instance) -> (),
     Destroy: (self: IconButton) -> ()
 }
 
@@ -59,7 +60,7 @@ local BaseBlueprint: Blueprint.Blueprint = Blueprint.new({
     }
 })
 
-function IconButton.new(icon: Icon.Icon, callback: () -> ()): IconButton
+function IconButton.new(icon: Icon.Icon, callback: (() -> ())?): IconButton
     local self = setmetatable({}, IconButton) :: IconButton
     self.Class = "IconButton"
     self.Callback = callback or function() end
@@ -160,6 +161,10 @@ function IconButton.Enable(self: IconButton)
 
     instance.GroupTransparency = 0
     instance.Interactable = true
+end
+
+function IconButton.SetParent(self: IconButton, parent: Instance)
+    self.Instance.Parent = parent
 end
 
 function IconButton.Destroy(self: IconButton)

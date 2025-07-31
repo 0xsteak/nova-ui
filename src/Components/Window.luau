@@ -8,6 +8,7 @@ local DragController = require("../Modules/DragController")
 local ResizeController = require("../Modules/ResizeController")
 local Tweener = require("../Modules/Tweener")
 local IconButton = require("./IconButton")
+local Container = require("./Container")
 
 -- -- -- -- --
 
@@ -22,6 +23,7 @@ type WindowImpl = {
     CreateTopBarButton: (self: Window, name: string, icon: Icon.Icon, callback: () -> ()) -> IconButton.IconButton,
     Show: (self: Window) -> (),
     Hide: (self: Window) -> (),
+    SetParent: (self: Window, parent: Instance) -> (),
     Destroy: (self: Window) -> ()
 }
 
@@ -51,7 +53,8 @@ type self = {
     TopBarButtons: {[string]: IconButton.IconButton},
     DragController: DragController.DragController,
     ResizeController: ResizeController.ResizeController,
-    ResizeMinAuto: boolean
+    ResizeMinAuto: boolean,
+    Content: Container.Container
 }
 
 export type Window = typeof(setmetatable({} :: self, {} :: WindowImpl))
@@ -273,7 +276,8 @@ function Window.new(options: WindowOptions): Window
     end)
     self.ResizeController = resizeController
     
-    self.Instance.Name = options.Title :: string
+    self.Content = Container.fromObject(instance.Content)
+    
     self.Instance.Parent = Registry.Settings.ScreenGui
 
     updateThisTopBar()
@@ -292,9 +296,12 @@ function Window.SetIcon(self: Window, icon: Icon.Icon?)
     local topBarIcon = self.Instance.TopBar.Icon
     if icon then
         icon:ApplyTo(topBarIcon)
+        topBarIcon.Visible = true
     else
         topBarIcon.Visible = false
     end
+
+    updateTopBar(self)
 end
 
 function Window.SetSize(self: Window, size: UDim2)
@@ -359,6 +366,33 @@ function Window.Hide(self: Window)
     task.wait(0.25)
 
     instance.Visible = false
+end
+
+local function makeModal(self: Window, restore: boolean?)
+    self.DragController.Locked = if restore then false else true
+    self.ResizeController.Locked = if restore then false else true
+    
+    local buttons = self.TopBarButtons
+
+    if restore then
+        buttons.Maximize:Enable()
+        buttons.Restore:Enable()
+        buttons.Minimize:Enable()
+    else
+        buttons.Maximize:Disable()
+        buttons.Restore:Disable()
+        buttons.Minimize:Disable()
+    end
+end
+
+function Window.SetParent(self: Window, parent: Instance)
+    if parent:IsA("GuiObject") then
+        makeModal(self)
+    else
+        makeModal(self, true)
+    end
+
+    self.Instance.Parent = parent
 end
 
 function Window.Destroy(self: Window)

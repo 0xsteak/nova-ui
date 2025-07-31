@@ -5,6 +5,7 @@ local VERSION = "0.0.0"
 local Registry = require("@self/Modules/Registry")
 local Classes = require("@self/Classes")
 local Components = require("@self/Components")
+local Layouts = require("@self/Layouts")
 local GuiUtils = require("@self/Utils/GuiUtils")
 
 -- -- -- -- --
@@ -14,6 +15,7 @@ type Nova = {
     Registry: typeof(Registry),
     Classes: typeof(Classes),
     Components: typeof(Components),
+    Layouts: typeof(Layouts),
     Init: () -> ()
 }
 
@@ -23,7 +25,8 @@ local Nova = {
     Version = VERSION,
     Registry = Registry,
     Classes = Classes,
-    Components = Components
+    Components = Components,
+    Layouts = Layouts
 } :: Nova
 
 function Nova.Init()
