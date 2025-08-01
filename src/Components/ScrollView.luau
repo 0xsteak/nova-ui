@@ -480,6 +480,8 @@ function ScrollView.Destroy(self: ScrollView)
         connection:Disconnect()
     end
 
+    self.Instance:Destroy()
+
     setmetatable(self :: any, nil)
     table.clear(self :: any)
 end

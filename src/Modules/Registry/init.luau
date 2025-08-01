@@ -20,11 +20,11 @@ export type Registry = {
 
 export type SettingsType = {
     ScreenGui: ScreenGui,
-    FontId: string,
+    Font: Font,
     CurrentThemeId: number,
     AnimationsEnabled: boolean
 }
-export type RegistrySetting = "ScreenGui" | "FontId" | "CurrentThemeId" | "AnimationsEnabled"
+export type RegistrySetting = "ScreenGui" | "Font" | "CurrentThemeId" | "AnimationsEnabled"
 
 -- -- -- -- --
 
@@ -33,7 +33,7 @@ local Registry = {} :: Registry
 Registry.Themes = BuiltInThemes
 
 Registry.DefaultSettings = {
-    FontId = "rbxassetid://12187365364",
+    Font = Font.new("rbxassetid://12187365364"),
     CurrentThemeId = 1,
     AnimationsEnabled = true
 }
@@ -65,8 +65,6 @@ end
 function Registry.ResetSettings()
     Settings = TableUtils.DeepClone(Registry.DefaultSettings)
 end
-
--- -- -- -- --
 
 Registry.Settings = setmetatable({}, {
     __index = Settings,
