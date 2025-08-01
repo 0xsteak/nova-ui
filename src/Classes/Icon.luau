@@ -18,6 +18,8 @@ export type Icon = typeof(setmetatable({} :: self, {} :: IconImpl))
 local Icon = {} :: IconImpl
 Icon.__index = Icon
 
+local ContentProvider = game:GetService("ContentProvider")
+
 function Icon.new(image: string, rectSize: Vector2?, rectOffset: Vector2?): Icon
     local self = setmetatable({}, Icon) :: Icon
 
@@ -25,6 +27,8 @@ function Icon.new(image: string, rectSize: Vector2?, rectOffset: Vector2?): Icon
     self.Image = image
     self.RectSize = rectSize or Vector2.zero
     self.RectOffset = rectOffset or Vector2.zero
+
+    ContentProvider:PreloadAsync({image})
 
     return self
 end

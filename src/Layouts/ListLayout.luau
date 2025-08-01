@@ -1,7 +1,8 @@
 type ListLayoutImpl = {
     __index: ListLayoutImpl,
     new: () -> ListLayout,
-    SetAdornee: (self: ListLayout, adornee: GuiObject?) -> ()
+    SetAdornee: (self: ListLayout, adornee: GuiObject?) -> (),
+    Destroy: (self: ListLayout) -> ()
 }
 
 type self = {
@@ -29,6 +30,13 @@ end
 function ListLayout.SetAdornee(self: ListLayout, adornee: GuiObject?)
     self.Adornee = adornee
     self.Instance.Parent = adornee
+end
+
+function ListLayout.Destroy(self: ListLayout)
+    self.Instance:Destroy()
+
+    setmetatable(self :: any, nil)
+    table.clear(self :: any)
 end
 
 return ListLayout

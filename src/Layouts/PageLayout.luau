@@ -5,7 +5,8 @@ type PageLayoutImpl = {
     JumpTo: (self: PageLayout, page: Instance) -> (),
     JumpToIndex: (self: PageLayout, index: number) -> (),
     Next: () -> (),
-    Previous: () -> ()
+    Previous: () -> (),
+    Destroy: (self: PageLayout) -> ()
 }
 
 type self = {
@@ -49,6 +50,13 @@ end
 
 function PageLayout.Previous(self: PageLayout)
     self.Instance:Previous()
+end
+
+function PageLayout.Destroy(self: PageLayout)
+    self.Instance:Destroy()
+
+    setmetatable(self :: any, nil)
+    table.clear(self :: any)
 end
 
 return PageLayout

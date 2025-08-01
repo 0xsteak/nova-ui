@@ -70,9 +70,9 @@ function Theme.Clone(self: Theme): Theme
     return Theme.new(self.Name, self.Author, self.HighlightLocked, TableUtils.DeepClone(self.Colors))
 end
 
-function Theme.Destroy(self)
-    setmetatable(self, nil)
-    table.clear(self)
+function Theme.Destroy(self: Theme)
+    setmetatable(self :: any, nil)
+    table.clear(self :: any)
 end
 
 return Theme

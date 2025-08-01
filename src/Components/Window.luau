@@ -24,6 +24,7 @@ type WindowImpl = {
     Show: (self: Window) -> (),
     Hide: (self: Window) -> (),
     SetParent: (self: Window, parent: Instance) -> (),
+    GetContent: (self: Window) -> GuiObject,
     Destroy: (self: Window) -> ()
 }
 
@@ -110,7 +111,7 @@ local BaseBlueprint: Blueprint.Blueprint = Blueprint.new({
             Name = "Title",
             BackgroundTransparency = 1,
             Position = UDim2.new(0, 36, 0, 0),
-            FontFace = Font.new(Registry.Settings.FontId, Enum.FontWeight.Medium),
+            FontFace = Font.new(Registry.Settings.Font.Family, Enum.FontWeight.Medium),
             TextSize = 14,
             TextTruncate = Enum.TextTruncate.AtEnd,
             TextXAlignment = Enum.TextXAlignment.Left
@@ -395,6 +396,10 @@ function Window.SetParent(self: Window, parent: Instance)
     self.Instance.Parent = parent
 end
 
+function Window.GetContent(self: Window): GuiObject
+    return self.Content.Instance
+end
+
 function Window.Destroy(self: Window)
     self.ResizeController:Destroy()
     self.DragController:Destroy()
@@ -402,6 +407,8 @@ function Window.Destroy(self: Window)
     for _, button in self.TopBarButtons do
         button:Destroy()
     end
+
+    self.Instance:Destroy()
 
     setmetatable(self :: any, nil)
     table.clear(self :: any)

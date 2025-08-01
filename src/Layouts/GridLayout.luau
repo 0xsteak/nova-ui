@@ -1,7 +1,8 @@
 type GridLayoutImpl = {
     __index: GridLayoutImpl,
     new: () -> GridLayout,
-    SetAdornee: (self: GridLayout, adornee: GuiObject?) -> ()
+    SetAdornee: (self: GridLayout, adornee: GuiObject?) -> (),
+    Destroy: (self: GridLayout) -> ()
 }
 
 type self = {
@@ -29,6 +30,13 @@ end
 function GridLayout.SetAdornee(self: GridLayout, adornee: GuiObject?)
     self.Adornee = adornee
     self.Instance.Parent = adornee
+end
+
+function GridLayout.Destroy(self: GridLayout)
+    self.Instance:Destroy()
+
+    setmetatable(self :: any, nil)
+    table.clear(self :: any)
 end
 
 return GridLayout

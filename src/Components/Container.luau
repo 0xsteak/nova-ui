@@ -7,7 +7,8 @@ type ContainerImpl = {
     new: () -> Container,
     fromObject: (object: GuiObject) -> Container,
     SetLayout: (self: Container, layout: Shared.BaseLayout) -> (),
-    SetParent: (self: Container, parent: Instance) -> ()
+    SetParent: (self: Container, parent: Instance) -> (),
+    Destroy: (self: Container) -> ()
 }
 
 type self = {
@@ -50,6 +51,17 @@ end
 
 function Container.SetParent(self: Container, parent: Instance)
     self.Instance.Parent = parent
+end
+
+function Container.Destroy(self: Container)
+    if self.Layout then
+        self.Layout:Destroy()
+    end
+
+    self.Instance:Destroy()
+
+    setmetatable(self :: any, nil)
+    table.clear(self :: any)
 end
 
 return Container
