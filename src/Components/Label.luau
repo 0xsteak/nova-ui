@@ -12,6 +12,7 @@ type LabelImpl = {
     SetXAlignment: (self: Label, alignment: Enum.TextXAlignment) -> (),
     SetYAlignment: (self: Label, alignment: Enum.TextYAlignment) -> (),
     SetSize: (self: Label, size: UDim2) -> (),
+    SetTextSize: (self: Label, size: number) -> (),
     SetParent: (self: Label, parent: Instance) -> (),
     Destroy: (self: Label) -> ()
 }
@@ -20,7 +21,6 @@ type self = {
     Class: "Label",
     Instance: TextLabel,
     AutoHeight: boolean,
-    Size: UDim2,
     Params: GetTextBoundsParams
 }
 
@@ -31,7 +31,8 @@ type LabelOptions = {
     TextXAlignment: Enum.TextXAlignment?,
     TextYAlignment: Enum.TextYAlignment?,
     AutoHeight: boolean?,
-    Size: UDim2?
+    Size: UDim2?,
+    TextSize: number
 }
 
 -- -- -- -- --
@@ -46,7 +47,6 @@ local BaseBlueprint = Blueprint.new({
     BackgroundTransparency = 1,
     BorderSizePixel = 0,
     FontFace = Registry.Settings.Font,
-    TextSize = 14,
     TextWrapped = true
 })
 
@@ -71,7 +71,8 @@ local DefaultOptions = {
     TextXAlignment = Enum.TextXAlignment.Center,
     TextYAlignment = Enum.TextYAlignment.Center,
     AutoHeight = true,
-    Size = UDim2.new(0, 100, 0, 100)
+    Size = UDim2.new(0, 100, 0, 100),
+    TextSize = 14
 } :: LabelOptions
 
 function Label.new(options: LabelOptions): Label
@@ -111,6 +112,7 @@ function Label.new(options: LabelOptions): Label
     self:SetXAlignment(options.TextXAlignment)
     self:SetYAlignment(options.TextYAlignment)
     self:SetSize(options.Size)
+    self:SetTextSize(options.TextSize)
 
     return self
 end
@@ -129,6 +131,10 @@ end
 
 function Label.SetSize(self: Label, size: UDim2)
     self.Instance.Size = size
+end
+
+function Label.SetTextSize(self: Label, size: number)
+    self.Instance.TextSize = size
 end
 
 function Label.SetParent(self: Label, parent: Instance)

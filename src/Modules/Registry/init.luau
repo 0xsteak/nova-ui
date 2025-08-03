@@ -66,7 +66,7 @@ function Registry.ResetSettings()
     Settings = TableUtils.DeepClone(Registry.DefaultSettings)
 end
 
-Registry.Settings = setmetatable({}, {
+Registry.Settings = setmetatable({_ = Settings}, {
     __index = Settings,
     __newindex = function(self, setting: RegistrySetting, value)
         Settings[setting] = value

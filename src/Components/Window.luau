@@ -7,6 +7,7 @@ local ThemeService = require("../Modules/ThemeService")
 local DragController = require("../Modules/DragController")
 local ResizeController = require("../Modules/ResizeController")
 local Tweener = require("../Modules/Tweener")
+local DropShadow = require("../Modules/DropShadow")
 local IconButton = require("./IconButton")
 local Container = require("./Container")
 
@@ -55,7 +56,8 @@ type self = {
     DragController: DragController.DragController,
     ResizeController: ResizeController.ResizeController,
     ResizeMinAuto: boolean,
-    Content: Container.Container
+    Content: Container.Container,
+    DropShadow: DropShadow.DropShadow
 }
 
 export type Window = typeof(setmetatable({} :: self, {} :: WindowImpl))
@@ -281,6 +283,11 @@ function Window.new(options: WindowOptions): Window
     
     self.Instance.Parent = Registry.Settings.ScreenGui
 
+    local dropShadow = DropShadow.new("Window")
+    dropShadow:SetAdornee(instance)
+
+    self.DropShadow = dropShadow
+
     updateThisTopBar()
     
     return self
@@ -408,6 +415,8 @@ function Window.Destroy(self: Window)
         button:Destroy()
     end
 
+    self.Content:Destroy()
+    self.DropShadow:Destroy()
     self.Instance:Destroy()
 
     setmetatable(self :: any, nil)
