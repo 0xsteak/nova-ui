@@ -1,78 +1,62 @@
-local TableUtils = require("../Utils/TableUtils")
+local HttpService = game:GetService('HttpService')
 
--- -- -- -- --
+export type ColorToken = keyof<ColorTokens>
 
-type ThemeImpl = {
-    __index: ThemeImpl,
-    new: (name: string, author: string, highlightLocked: boolean, colors: ThemeColors) -> Theme,
-    GetColor: (self: Theme, color: ThemeColor) -> Color3?,
-    ToJSON: (self: Theme) -> string,
-    Clone: (self: Theme) -> Theme,
-    Destroy: (self: Theme) -> ()
+export type ColorTokens = {
+	Background: Color3,
+	Foreground: Color3,
+	PrimaryText: Color3,
+	SecondaryText: Color3,
+	Accent: Color3,
+	Surface: Color3,
 }
 
-export type ThemeColor = "Background" | "BackgroundDark" | "BackgroundLight" | "PrimaryText" | "SecondaryText"
-| "Highlight" | "ScrollBarTrack" | "ScrollBarThumb"
-
-export type ThemeColors = {
-    [ThemeColor]: Color3
+type ThemeProps = {
+	ClassName: 'NovaUI.Theme',
+	Id: string,
+	Name: string,
+	Author: string,
+	ColorTokens: ColorTokens,
 }
 
-type self = {
-    Class: "Theme",
-    Name: string,
-    Author: string,
-    HighlightLocked: boolean,
-    Colors: ThemeColors
-}
-
-export type Theme = typeof(setmetatable({} :: self, {} :: ThemeImpl))
-
--- -- -- -- --
-
-local Theme = {} :: ThemeImpl
+local Theme = {}
 Theme.__index = Theme
 
-local HttpService = game:GetService("HttpService")
+export type Theme = typeof(setmetatable({} :: ThemeProps, Theme))
 
-function Theme.new(name: string, author: string, highlightLocked: boolean, colors: ThemeColors): Theme
-    local self = setmetatable({}, Theme) :: Theme
-
-    self.Class = "Theme"
-    self.Name = name
-    self.Author = author
-    self.HighlightLocked = highlightLocked
-    self.Colors = colors
-
-    return self
+function Theme.__tostring(self: Theme)
+	return self.ClassName
 end
 
-function Theme.GetColor(self: Theme, color: ThemeColor): Color3?
-    return self.Colors[color]
+function Theme.new(name: string, author: string, id: string?, colorTokens: ColorTokens): Theme
+	local self: Theme = setmetatable({}, Theme)
+
+	self.ClassName = 'NovaUI.Theme'
+	self.Id = id or HttpService:GenerateGUID(false)
+	self.Name = name
+	self.Author = author
+	self.ColorTokens = colorTokens
+
+	return self
+end
+
+function Theme.GetColorToken(self: Theme, token: ColorToken): Color3?
+	return self.ColorTokens[token]
 end
 
 function Theme.ToJSON(self: Theme): string
-    local object = {}
+	local object = {}
 
-    object.Name = self.Name
-    object.Author = self.Author
-    object.HighlightLocked = self.HighlightLocked
-    object.Colors = {}
+	object.Id = self.Id
+	object.Name = self.Name
+	object.Author = self.Author
+	object.ColorTokens = {}
 
-    for name, color in self.Colors do
-        object[name] = (color :: Color3):ToHex()
-    end
+	for name: ColorToken, color: Color3 in self.ColorTokens do
+		object[name] = color:ToHex()
+	end
 
-    return HttpService:JSONEncode(object)
-end
-
-function Theme.Clone(self: Theme): Theme
-    return Theme.new(self.Name, self.Author, self.HighlightLocked, TableUtils.DeepClone(self.Colors))
-end
-
-function Theme.Destroy(self: Theme)
-    setmetatable(self :: any, nil)
-    table.clear(self :: any)
+	return HttpService:JSONEncode(object)
 end
 
 return Theme

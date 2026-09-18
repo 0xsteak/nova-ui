@@ -1,18 +1,10 @@
 {
-  "name": "nova-ui",
+  "name": "Nova",
+  "globIgnorePaths": ["**/*.spec.luau", "src/jest.config.luau"],
   "tree": {
-    "$className": "DataModel",
-    "ReplicatedStorage": {
-      "Nova": {
-        "$path": "rblx-src"
-      }
-    },
-    "StarterPlayer": {
-      "StarterPlayerScripts": {
-        "dev": {
-          "$path": "dev"
-        }
-      }
+    "$path": "src",
+    "Packages": {
+      "$path": "roblox_packages"
     }
   }
 }

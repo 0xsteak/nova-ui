@@ -1,0 +1,27 @@
+{
+  "name": "nova-ui",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Nova": {
+        "$path": "src",
+        "Packages": {
+          "$path": "roblox_packages"
+        }
+      }
+    },
+    "ServerScriptService": {
+      "$className": "ServerScriptService",
+      "$properties": {
+        "LoadStringEnabled": true
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "dev": {
+          "$path": "dev"
+        }
+      }
+    }
+  }
+}

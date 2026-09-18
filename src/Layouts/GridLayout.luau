@@ -1,42 +1,43 @@
-type GridLayoutImpl = {
-    __index: GridLayoutImpl,
-    new: () -> GridLayout,
-    SetAdornee: (self: GridLayout, adornee: GuiObject?) -> (),
-    Destroy: (self: GridLayout) -> ()
+type GridLayoutProps = {
+	ClassName: 'NovaUI.GridLayout',
+	Adornee: GuiObject?,
+	Instance: UIGridLayout,
+	AdorneeConnection: RBXScriptConnection,
 }
 
-type self = {
-    Class: "Layout",
-    LayoutType: "Grid",
-    Adornee: GuiObject?,
-    Instance: UIGridLayout
-}
-
-export type GridLayout = typeof(setmetatable({} :: self, {} :: GridLayoutImpl))
-
--- -- -- -- --
-
-local GridLayout = {} :: GridLayoutImpl
+local GridLayout = {}
 GridLayout.__index = GridLayout
 
+export type GridLayout = typeof(setmetatable({} :: GridLayoutProps, GridLayout))
+
+function GridLayout.__tostring(self: GridLayout)
+	return self.ClassName
+end
+
 function GridLayout.new(): GridLayout
-    local self = setmetatable({}, GridLayout) :: GridLayout
+	local self: GridLayout = setmetatable({}, GridLayout)
 
-    self.Instance = Instance.new("UIGridLayout")
+	self.ClassName = 'NovaUI.GridLayout'
+	self.Instance = Instance.new('UIGridLayout')
 
-    return self
+	return self
 end
 
 function GridLayout.SetAdornee(self: GridLayout, adornee: GuiObject?)
-    self.Adornee = adornee
-    self.Instance.Parent = adornee
+	if self.AdorneeConnection then
+		self.AdorneeConnection:Disconnect()
+	end
+
+	self.Adornee = adornee
+	self.Instance.Parent = adornee
+
+	self.AdorneeConnection = adornee.Destroying:Once(function()
+		self:Destroy()
+	end)
 end
 
 function GridLayout.Destroy(self: GridLayout)
-    self.Instance:Destroy()
-
-    setmetatable(self :: any, nil)
-    table.clear(self :: any)
+	self.Instance:Destroy()
 end
 
 return GridLayout

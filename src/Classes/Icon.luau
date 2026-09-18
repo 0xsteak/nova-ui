@@ -1,42 +1,34 @@
-type IconImpl = {
-    __index: IconImpl,
-    new: (image: string, rectSize: Vector2?, rectOffset: Vector2?) -> Icon,
-    ApplyTo: (self: Icon, object: ImageLabel) -> ()
+type IconProps = {
+	ClassName: 'NovaUI.Icon',
+	Image: string,
+	RectSize: Vector2,
+	RectOffset: Vector2,
 }
 
-type self = {
-    Class: "Icon",
-    Image: string,
-    RectSize: Vector2,
-    RectOffset: Vector2
-}
-
-export type Icon = typeof(setmetatable({} :: self, {} :: IconImpl))
-
--- -- -- -- --
-
-local Icon = {} :: IconImpl
+local Icon = {}
 Icon.__index = Icon
 
-local ContentProvider = game:GetService("ContentProvider")
+export type Icon = typeof(setmetatable({} :: IconProps, Icon))
+
+function Icon.__tostring(self: Icon)
+	return self.ClassName
+end
 
 function Icon.new(image: string, rectSize: Vector2?, rectOffset: Vector2?): Icon
-    local self = setmetatable({}, Icon) :: Icon
+	local self: Icon = setmetatable({}, Icon)
 
-    self.Class = "Icon"
-    self.Image = image
-    self.RectSize = rectSize or Vector2.zero
-    self.RectOffset = rectOffset or Vector2.zero
+	self.ClassName = 'NovaUI.Icon'
+	self.Image = image
+	self.RectSize = rectSize or Vector2.zero
+	self.RectOffset = rectOffset or Vector2.zero
 
-    ContentProvider:PreloadAsync({image})
-
-    return self
+	return self
 end
 
 function Icon.ApplyTo(self: Icon, object: ImageLabel)
-    object.Image = self.Image
-    object.ImageRectSize = self.RectSize
-    object.ImageRectOffset = self.RectOffset
+	object.Image = self.Image
+	object.ImageRectSize = self.RectSize
+	object.ImageRectOffset = self.RectOffset
 end
 
 return Icon

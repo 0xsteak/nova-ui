@@ -5,7 +5,7 @@
   },
   bundle: {
     require_mode: {
-      name: "path"
+      name: "luau"
     }
   },
   rules: [

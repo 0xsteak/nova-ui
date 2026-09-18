@@ -1,167 +1,215 @@
-local Icon = require("../Classes/Icon")
-local Blueprint = require("../Modules/Blueprint")
-local GuiUtils = require("../Utils/GuiUtils")
-local TableUtils = require("../Utils/TableUtils")
-local Registry = require("../Modules/Registry")
-local ThemeService = require("../Modules/ThemeService")
-local DragController = require("../Modules/DragController")
-local ResizeController = require("../Modules/ResizeController")
-local Tweener = require("../Modules/Tweener")
-local DropShadow = require("../Modules/DropShadow")
-local IconButton = require("./IconButton")
-local Container = require("./Container")
-
--- -- -- -- --
-
-type WindowImpl = {
-    __index: WindowImpl,
-    new: (options: WindowOptions) -> Window,
-    SetTitle: (self: Window, title: string) -> (),
-    SetIcon: (self: Window, icon: Icon.Icon?) -> (),
-    SetSize: (self: Window, size: UDim2) -> (),
-    SetPosition: (self: Window, position: UDim2) -> (),
-    Center: (self: Window) -> (),
-    CreateTopBarButton: (self: Window, name: string, icon: Icon.Icon, callback: () -> ()) -> IconButton.IconButton,
-    Show: (self: Window) -> (),
-    Hide: (self: Window) -> (),
-    SetParent: (self: Window, parent: Instance) -> (),
-    GetContent: (self: Window) -> GuiObject,
-    Destroy: (self: Window) -> ()
-}
+local IconButton = require(script.Parent.Buttons.IconButton)
+local Icon = require(script.Parent.Parent.Classes.Icon)
+local Blueprint = require(script.Parent.Parent.Classes.Blueprint)
+local GuiUtils = require(script.Parent.Parent.Utils.GuiUtils)
+local TableUtils = require(script.Parent.Parent.Utils.TableUtils)
+local Registry = require(script.Parent.Parent.Registry)
+local ThemeService = require(script.Parent.Parent.Services.ThemeService)
+local DragController = require(script.Parent.Parent.Controllers.DragController)
+local ResizeController = require(script.Parent.Parent.Controllers.ResizeController)
+local Container = require(script.Parent.Container)
+local Preferences = require(script.Parent.Parent.Registry.Preferences)
+local TransitionService = require(script.Parent.Parent.Services.TransitionService)
+local Transition = require(script.Parent.Parent.Services.TransitionService.Transition)
+local TransitionGroup = require(script.Parent.Parent.Services.TransitionService.TransitionGroup)
 
 type instance = CanvasGroup & {
-    TopBar: Frame & {
-        Title: TextLabel,
-        Icon: ImageLabel,
-        Buttons: Frame & {
-            UIListLayout: UIListLayout,
-            UIPadding: UIPadding
-        },
-        DragHandle: Frame,
-    },
-    Content: Frame,
-    UIScale: UIScale
+	TopBar: Frame & {
+		Title: TextLabel,
+		Icon: ImageLabel,
+		Buttons: Frame & {
+			UIListLayout: UIListLayout,
+			UIPadding: UIPadding,
+		},
+		DragHandle: Frame,
+	},
+	Content: Frame,
+	UIScale: UIScale,
+	UIShadow: UIShadow,
 }
 
-type self = {
-    Class: "Window",
-    Instance: instance,
-    Title: string,
-    Icon: Icon.Icon?,
-    Position: UDim2,
-    Size: UDim2,
-    OriginalSize: UDim2,
-    OriginalPosition: UDim2,
-    TopBarButtons: {[string]: IconButton.IconButton},
-    DragController: DragController.DragController,
-    ResizeController: ResizeController.ResizeController,
-    ResizeMinAuto: boolean,
-    Content: Container.Container,
-    DropShadow: DropShadow.DropShadow
+type WindowProps = {
+	ClassName: 'NovaUI.Window',
+	Instance: instance,
+	Title: string,
+	Icon: Icon.Icon?,
+	Position: UDim2,
+	Size: UDim2,
+	OriginalSize: UDim2,
+	OriginalPosition: UDim2,
+	TopBarButtons: { [string]: IconButton.IconButton },
+	DragController: DragController.DragController,
+	ResizeController: ResizeController.ResizeController,
+	ResizeMinAuto: boolean,
+	Content: Container.Container,
+	Transitions: {
+		Maximize: Transition.Transition,
+		Restore: Transition.Transition,
+	},
+	TransitionGroups: {
+		Show: TransitionGroup.TransitionGroup,
+		Hide: TransitionGroup.TransitionGroup,
+	},
+	Hidden: boolean,
 }
-
-export type Window = typeof(setmetatable({} :: self, {} :: WindowImpl))
 
 export type WindowOptions = {
-    Title: string?,
-    Icon: Icon.Icon?,
-    Position: UDim2?,
-    Size: UDim2?,
-    Draggable: boolean?,
-    Resizable: boolean?
+	Title: string?,
+	Icon: Icon.Icon?,
+	Position: UDim2?,
+	Size: UDim2?,
+	Draggable: boolean?,
+	Resizable: boolean?,
 }
 
--- -- -- -- --
-
-local Window = {} :: WindowImpl
+local Window = {}
 Window.__index = Window
 
-local BaseBlueprint: Blueprint.Blueprint = Blueprint.new({
-    Class = "CanvasGroup",
-    Active = true,
-    AnchorPoint = Vector2.new(0.5, 0.5),
-    GroupTransparency = 1,
-    Visible = false,
-    {
-        Class = "UIScale",
-        Scale = 0.85
-    },
-    {
-        Class = "UICorner",
-        CornerRadius = UDim.new(0, 8)
-    },
-    {
-        Class = "Frame",
-        Name = "TopBar",
-        BackgroundTransparency = 1,
-        Size = UDim2.new(1, 0, 0, 30),
-        {
-            Class = "Frame",
-            Name = "DragHandle",
-            BackgroundTransparency = 1
-        },
-        {
-            Class = "ImageLabel",
-            Name = "Icon",
-            AnchorPoint = Vector2.new(0, 0.5),
-            BackgroundTransparency = 1,
-            Position = UDim2.new(0, 10, 0.5, 0),
-            Size = UDim2.new(0, 16, 0, 16)
-        },
-        {
-            Class = "TextLabel",
-            Name = "Title",
-            BackgroundTransparency = 1,
-            Position = UDim2.new(0, 36, 0, 0),
-            FontFace = Font.new(Registry.Settings.Font.Family, Enum.FontWeight.Medium),
-            TextSize = 14,
-            TextTruncate = Enum.TextTruncate.AtEnd,
-            TextXAlignment = Enum.TextXAlignment.Left
-        },
-        {
-            Class = "Frame",
-            Name = "Buttons",
-            AnchorPoint = Vector2.new(1, 0),
-            BackgroundTransparency = 1,
-            Position = UDim2.new(1, 0, 0, 0),
-            {
-                Class = "UIListLayout",
-                Padding = UDim.new(0, 5),
-                FillDirection = Enum.FillDirection.Horizontal,
-                SortOrder = Enum.SortOrder.LayoutOrder,
-                HorizontalAlignment = Enum.HorizontalAlignment.Right,
-                VerticalAlignment = Enum.VerticalAlignment.Center
-            },
-            {
-                Class = "UIPadding",
-                PaddingRight = UDim.new(0, 5)
-            }
-        }
-    },
-    {
-        Class = "Frame",
-        Name = "Content",
-        BackgroundTransparency = 1,
-        Position = UDim2.new(0, 0, 0, 30),
-        Size = UDim2.new(1, 0, 1, -30)
-    }
+export type Window = typeof(setmetatable({} :: WindowProps, Window))
+
+function Window.__tostring(self: Window)
+	return self.ClassName
+end
+
+local _basePreset = {
+	Time = 0.25,
+	EasingStyle = Enum.EasingStyle.Cubic,
+	EasingDirection = Enum.EasingDirection.Out,
+}
+local ShowPreset: TransitionGroup.Preset = {
+	_base = _basePreset,
+	Window = {
+		PropertyTable = {
+			GroupTransparency = 0,
+		} :: Transition.PropertyTable<CanvasGroup>,
+	},
+	UIScale = {
+		PropertyTable = {
+			Scale = 1,
+		} :: Transition.PropertyTable<UIScale>,
+	},
+	UIShadow = {
+		PropertyTable = {
+			Transparency = 0.5,
+		},
+	},
+}
+local HidePreset: TransitionGroup.Preset = {
+	_base = _basePreset,
+	Window = {
+		PropertyTable = {
+			GroupTransparency = 1,
+		} :: Transition.PropertyTable<CanvasGroup>,
+	},
+	UIScale = {
+		PropertyTable = {
+			Scale = 0.85,
+		} :: Transition.PropertyTable<UIScale>,
+	},
+	UIShadow = {
+		PropertyTable = {
+			Transparency = 1,
+		},
+	},
+}
+local MaximizePreset: Transition.Preset = table.clone(_basePreset)
+MaximizePreset.PropertyTable = {
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	Size = UDim2.new(1, 0, 1, 0),
+} :: Transition.PropertyTable<CanvasGroup>
+
+local BaseBlueprint = Blueprint.new({
+	ClassName = 'CanvasGroup',
+	Active = true,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	GroupTransparency = 1,
+	Visible = false,
+	{
+		ClassName = 'UIScale',
+		Scale = 0.85,
+	},
+	{
+		ClassName = 'UICorner',
+		CornerRadius = UDim.new(0, 8),
+	},
+	{
+		ClassName = 'UIShadow',
+		BlurRadius = UDim.new(0, 20),
+		Transparency = 1,
+	} :: Blueprint.BlueprintData<UIShadow>,
+	{
+		ClassName = 'Frame',
+		Name = 'TopBar',
+		BackgroundTransparency = 1,
+		Size = UDim2.new(1, 0, 0, 30),
+		{
+			ClassName = 'Frame',
+			Name = 'DragHandle',
+			BackgroundTransparency = 1,
+		},
+		{
+			ClassName = 'ImageLabel',
+			Name = 'Icon',
+			AnchorPoint = Vector2.new(0, 0.5),
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 10, 0.5, 0),
+			Size = UDim2.new(0, 16, 0, 16),
+		},
+		{
+			ClassName = 'TextLabel',
+			Name = 'Title',
+			BackgroundTransparency = 1,
+			Position = UDim2.new(0, 36, 0, 0),
+			TextSize = 14,
+			TextTruncate = Enum.TextTruncate.AtEnd,
+			TextXAlignment = Enum.TextXAlignment.Left,
+		},
+		{
+			ClassName = 'Frame',
+			Name = 'Buttons',
+			AnchorPoint = Vector2.new(1, 0),
+			BackgroundTransparency = 1,
+			Position = UDim2.new(1, 0, 0, 0),
+			{
+				ClassName = 'UIListLayout',
+				Padding = UDim.new(0, 5),
+				FillDirection = Enum.FillDirection.Horizontal,
+				SortOrder = Enum.SortOrder.LayoutOrder,
+				HorizontalAlignment = Enum.HorizontalAlignment.Right,
+				VerticalAlignment = Enum.VerticalAlignment.Center,
+			},
+			{
+				ClassName = 'UIPadding',
+				PaddingRight = UDim.new(0, 5),
+			},
+		},
+	},
+	{
+		ClassName = 'Frame',
+		Name = 'Content',
+		BackgroundTransparency = 1,
+		Position = UDim2.new(0, 0, 0, 30),
+		Size = UDim2.new(1, 0, 1, -30),
+	},
 })
 
-local topBarIconsSheet = "rbxassetid://106110894885348"
+local topBarIconsSheet = 'rbxassetid://106110894885348'
 local closeIcon = Icon.new(topBarIconsSheet, Vector2.new(16, 16), Vector2.zero)
 local maximizeIcon = Icon.new(topBarIconsSheet, Vector2.new(16, 16), Vector2.new(16, 0))
 local restoreIcon = Icon.new(topBarIconsSheet, Vector2.new(16, 16), Vector2.new(16, 16))
 local minimizeIcon = Icon.new(topBarIconsSheet, Vector2.new(16, 16), Vector2.new(0, 16))
 
 local function maximizeToggle(self: Window, restore: boolean?)
-	local instance = self.Instance
-	local tweenInfo = Tweener.TweenInfo(0.25, Enum.EasingStyle.Cubic)
 	local buttons = self.TopBarButtons
+	local transitions = self.Transitions
 
-	Tweener.Tween(instance, tweenInfo, "maximize_restore", {
-		Position = if restore then self.OriginalPosition else UDim2.new(0.5, 0, 0.5, 0),
-		Size = if restore then self.OriginalSize else UDim2.new(1, 0, 1, 0),
-	})
+	if restore then
+		transitions.Maximize:Cancel()
+		transitions.Restore:Replay()
+	else
+		transitions.Restore:Cancel()
+		transitions.Maximize:Replay()
+	end
 
 	self.DragController.Locked = if restore then false else true
 	self.ResizeController.Locked = if restore then false else true
@@ -171,256 +219,275 @@ local function maximizeToggle(self: Window, restore: boolean?)
 end
 
 local function initTopBarButtons(self: Window)
-    local close = self:CreateTopBarButton("Close", closeIcon, function()
-        self:Hide()
-    end)
-    close.Instance.LayoutOrder = 3
+	local close = self:CreateTopBarButton('Close', closeIcon, function()
+		self:Hide()
+	end)
+	close.Instance.LayoutOrder = 3
 
-	local maximize = self:CreateTopBarButton("Maximize", maximizeIcon, function()
+	local maximize = self:CreateTopBarButton('Maximize', maximizeIcon, function()
 		maximizeToggle(self)
 	end)
-    maximize.Instance.LayoutOrder = 2
+	maximize.Instance.LayoutOrder = 2
 
-	local restore = self:CreateTopBarButton("Restore", restoreIcon, function()
+	local restore = self:CreateTopBarButton('Restore', restoreIcon, function()
 		maximizeToggle(self, true)
 	end)
-    restore.Instance.Visible = false
-    restore.Instance.LayoutOrder = 2
+	restore.Instance.Visible = false
+	restore.Instance.LayoutOrder = 2
 
-    local minimize = self:CreateTopBarButton("Minimize", minimizeIcon, function()
-        self:Hide()
-    end)
-    minimize.Instance.LayoutOrder = 1
+	local minimize = self:CreateTopBarButton('Minimize', minimizeIcon, function()
+		self:Hide()
+	end)
+	minimize.Instance.LayoutOrder = 1
 end
 
 local function updateTopBar(self: Window)
-    local topBar = (self.Instance :: instance).TopBar
-    local icon = topBar.Icon
-    local title = topBar.Title
-    local buttons = topBar.Buttons
-    local listLayout = buttons.UIListLayout
+	local topBar = (self.Instance :: instance).TopBar
+	local icon = topBar.Icon
+	local title = topBar.Title
+	local buttons = topBar.Buttons
+	local listLayout = buttons.UIListLayout
 
-    local iconSizeX = if icon.Visible then icon.AbsoluteSize.X + 10 else 0
-    local contentSizeX = listLayout.AbsoluteContentSize.X
-    local newButtonsSizeX = contentSizeX + (if contentSizeX > 0 then 10 else 0)
+	local iconSizeX = if icon.Visible then icon.AbsoluteSize.X + 10 else 0
+	local contentSizeX = listLayout.AbsoluteContentSize.X
+	local newButtonsSizeX = contentSizeX + (if contentSizeX > 0 then 10 else 0)
 
-    buttons.Size = UDim2.new(0, newButtonsSizeX, 1, 0)
-    title.Position = UDim2.new(0, iconSizeX + 10, 0, 0)
-    topBar.DragHandle.Size = UDim2.new(1, -newButtonsSizeX, 1, 0)
-    title.Size = UDim2.new(1, -iconSizeX - 10 - newButtonsSizeX, 1, 0)
+	buttons.Size = UDim2.new(0, newButtonsSizeX, 1, 0)
+	title.Position = UDim2.new(0, iconSizeX + 10, 0, 0)
+	topBar.DragHandle.Size = UDim2.new(1, -newButtonsSizeX, 1, 0)
+	title.Size = UDim2.new(1, -iconSizeX - 10 - newButtonsSizeX, 1, 0)
 
-    if self.ResizeMinAuto then
-        self.ResizeController.ResizeMin = Vector2.new(iconSizeX + 10 + newButtonsSizeX, topBar.AbsoluteSize.Y)
-    end
+	if self.ResizeMinAuto then
+		self.ResizeController.ResizeMin = Vector2.new(iconSizeX + 10 + newButtonsSizeX, topBar.AbsoluteSize.Y)
+	end
 end
 
 local DefaultOptions: WindowOptions = {
-    Title = "Window",
-    Position = UDim2.new(0.5, 0, 0.5, 0),
-    Size = UDim2.new(0, 640, 0, 480),
-    Draggable = true,
-    Resizable = true
+	Title = 'Window',
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	Size = UDim2.new(0, 640, 0, 480),
+	Draggable = true,
+	Resizable = true,
 }
 
 function Window.new(options: WindowOptions): Window
-    options = TableUtils.Merge(DefaultOptions, options)
+	options = TableUtils.Merge(DefaultOptions, options)
 
-    local self: Window = setmetatable({}, Window) :: Window
+	local self: Window = setmetatable({}, Window)
 
-    local instance = BaseBlueprint:Build() :: instance
-    local topBar = instance.TopBar
-    local icon = topBar.Icon
-    local buttons = topBar.Buttons
-    local listLayout = buttons.UIListLayout
+	local instance = BaseBlueprint:Build() :: instance
+	local topBar = instance.TopBar
+	local icon = topBar.Icon
+	local buttons = topBar.Buttons
+	local listLayout = buttons.UIListLayout
 
-    self.Class = "Window"
-    self.Instance = instance
-    self.TopBarButtons = {}
+	local function updateTitleFont()
+		topBar.Title.FontFace = Font.new(Preferences.GetFontFamily(), Enum.FontWeight.Medium)
+	end
+	Preferences.FontFamilyChanged:Connect(updateTitleFont)
+	updateTitleFont()
 
-    ThemeService.Link(instance, "Background", {"BackgroundColor3"})
-    ThemeService.Link(topBar.Title, "PrimaryText", {"TextColor3"})
-    ThemeService.Link(icon, "Highlight", {"ImageColor3"})
+	self.ClassName = 'NovaUI.Window'
+	self.Instance = instance
+	self.TopBarButtons = {}
+	self.Hidden = false
 
-    ThemeService.Update()
+	local restorePreset: Transition.Preset = table.clone(_basePreset)
+	restorePreset.PropertyTable = function()
+		return {
+			Position = self.OriginalPosition,
+			Size = self.OriginalSize,
+		} :: Transition.PropertyTable<CanvasGroup>
+	end
 
-    self:SetTitle(options.Title :: string)
-    self:SetIcon(options.Icon)
-    self:SetSize(options.Size :: UDim2)
-    if not options.Position then
-        self:Center()
-    else
-        self:SetPosition(options.Position)
-    end
-    self.ResizeMinAuto = true
+	local showTransition = TransitionService.CreateGroup(
+		{ Window = instance, UIScale = instance.UIScale, UIShadow = instance.UIShadow },
+		ShowPreset
+	)
+	local hideTransition = TransitionService.CreateGroup(
+		{ Window = instance, UIScale = instance.UIScale, UIShadow = instance.UIShadow },
+		HidePreset
+	)
+	local maximizeTransition = TransitionService.Create(instance, MaximizePreset)
+	local restoreTransition = TransitionService.Create(instance, restorePreset)
 
-    initTopBarButtons(self)
+	self.TransitionGroups = {
+		Show = showTransition,
+		Hide = hideTransition,
+	}
+	self.Transitions = {
+		Maximize = maximizeTransition,
+		Restore = restoreTransition,
+	}
 
-    local function updateThisTopBar()
-        updateTopBar(self)
-    end
+	ThemeService.Bind(instance, 'Background', 'BackgroundColor3')
+	ThemeService.Bind(topBar.Title, 'PrimaryText', 'TextColor3')
+	ThemeService.Bind(icon, 'Accent', 'ImageColor3')
 
-    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateThisTopBar)
-    topBar:GetPropertyChangedSignal("Size"):Connect(updateThisTopBar)
-    icon:GetPropertyChangedSignal("Visible"):Connect(updateThisTopBar)
-    
-    local dragController = DragController.new(instance, topBar.DragHandle)
-    dragController.Enabled = options.Draggable
-    dragController.DragChanged:Connect(function(newPos)
-        self.OriginalPosition = newPos
-    end)
-    self.DragController = dragController
-    
-    local resizeController = ResizeController.new(instance)
-    resizeController.Enabled = options.Resizable
-    resizeController.ResizeMin = Vector2.new()
-    resizeController.ResizeChanged:Connect(function(newPos, newSize)
-        self.OriginalPosition = newPos
-        self.OriginalSize = newSize
-    end)
-    self.ResizeController = resizeController
-    
-    self.Content = Container.fromObject(instance.Content)
-    
-    self.Instance.Parent = Registry.Settings.ScreenGui
+	ThemeService.Update()
 
-    local dropShadow = DropShadow.new("Window")
-    dropShadow:SetAdornee(instance)
+	self:SetTitle(options.Title :: string)
+	self:SetIcon(options.Icon)
+	self:SetSize(options.Size :: UDim2)
+	if not options.Position then
+		self:Center()
+	else
+		self:SetPosition(options.Position)
+	end
+	self.ResizeMinAuto = true
 
-    self.DropShadow = dropShadow
+	initTopBarButtons(self)
 
-    updateThisTopBar()
-    
-    return self
+	local function updateThisTopBar()
+		updateTopBar(self)
+	end
+
+	listLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(updateThisTopBar)
+	topBar:GetPropertyChangedSignal('Size'):Connect(updateThisTopBar)
+	icon:GetPropertyChangedSignal('Visible'):Connect(updateThisTopBar)
+
+	local dragController = DragController.new(instance, topBar.DragHandle)
+	dragController.Enabled = options.Draggable
+	dragController.DragChanged:Connect(function(newPos)
+		self.OriginalPosition = newPos
+	end)
+	self.DragController = dragController
+
+	local resizeController = ResizeController.new(instance)
+	resizeController.Enabled = options.Resizable
+	resizeController.ResizeMin = Vector2.new()
+	resizeController.ResizeChanged:Connect(function(newPos, newSize)
+		self.OriginalPosition = newPos
+		self.OriginalSize = newSize
+	end)
+	self.ResizeController = resizeController
+
+	self.Content = Container.fromGuiObject(instance.Content)
+
+	self.Instance.Parent = Registry.GetRootScreenGui()
+
+	updateThisTopBar()
+
+	return self
 end
 
 function Window.SetTitle(self: Window, title: string)
-    self.Title = title
-    self.Instance.TopBar.Title.Text = title
+	self.Title = title
+	self.Instance.TopBar.Title.Text = title
 end
 
 function Window.SetIcon(self: Window, icon: Icon.Icon?)
-    self.Icon = icon
+	self.Icon = icon
 
-    local topBarIcon = self.Instance.TopBar.Icon
-    if icon then
-        icon:ApplyTo(topBarIcon)
-        topBarIcon.Visible = true
-    else
-        topBarIcon.Visible = false
-    end
+	local topBarIcon = self.Instance.TopBar.Icon
+	if icon then
+		icon:ApplyTo(topBarIcon)
+		topBarIcon.Visible = true
+	else
+		topBarIcon.Visible = false
+	end
 
-    updateTopBar(self)
+	updateTopBar(self)
 end
 
 function Window.SetSize(self: Window, size: UDim2)
-    self.Size = size
-    self.OriginalSize = size
+	self.Size = size
+	self.OriginalSize = size
 
-    self.Instance.Size = size
+	self.Instance.Size = size
 end
 
 function Window.SetPosition(self: Window, position: UDim2)
-    self.Position = position
-    self.OriginalPosition = position
+	self.Position = position
+	self.OriginalPosition = position
 
-    self.Instance.Position = position
+	self.Instance.Position = position
 end
 
 function Window.Center(self: Window)
-    self:SetPosition(GuiUtils.GetCenterPosition(self.Instance))
+	self:SetPosition(GuiUtils.GetCenterPosition(self.Instance))
 end
 
-function Window.CreateTopBarButton(self: Window, name: string, icon: Icon.Icon, callback: () -> ()): IconButton.IconButton
-    local button = IconButton.new(icon, callback)
-    button.Instance.Parent = self.Instance.TopBar.Buttons
+function Window.CreateTopBarButton(
+	self: Window,
+	name: string,
+	icon: Icon.Icon,
+	callback: () -> ()
+): IconButton.IconButton
+	local button = IconButton.new(icon, callback)
+	button.Instance.Parent = self.Instance.TopBar.Buttons
 
-    self.TopBarButtons[name] = button
+	self.TopBarButtons[name] = button
 
-    return button
+	return button
 end
 
 function Window.Show(self: Window)
-    local instance = self.Instance
+	local instance = self.Instance
+	instance.Visible = true
 
-    instance.Visible = true
+	local transitionGroups = self.TransitionGroups
 
-    local tweenInfo = Tweener.TweenInfo(0.25, Enum.EasingStyle.Cubic)
+	transitionGroups.Hide:CancelAll()
+	transitionGroups.Show:ReplayAll()
 
-    local windowT = Tweener.Tween(instance, tweenInfo, "hide_show", {
-        GroupTransparency = 0
-    }, false)
-    local uiScaleT = Tweener.Tween(instance.UIScale, tweenInfo, "hide_show", {
-        Scale = 1
-    }, false)
-
-    windowT:Play()
-    uiScaleT:Play()
+	self.Hidden = false
 end
 
 function Window.Hide(self: Window)
-    local instance = self.Instance
-    local tweenInfo = Tweener.TweenInfo(0.25, Enum.EasingStyle.Cubic)
+	local instance = self.Instance
 
-    local windowT = Tweener.Tween(instance, tweenInfo, "hide_show", {
-        GroupTransparency = 1
-    }, false)
-    local uiScaleT = Tweener.Tween(instance.UIScale, tweenInfo, "hide_show", {
-        Scale = 0.85
-    }, false)
+	local transitionGroups = self.TransitionGroups
+	local hideTransition = transitionGroups.Hide
 
-    windowT:Play()
-    uiScaleT:Play()
+	transitionGroups.Show:CancelAll()
+	hideTransition:ReplayAll()
 
-    task.wait(0.25)
+	hideTransition.Transitions.Window.Completed:Once(function()
+		instance.Visible = false
+	end)
 
-    instance.Visible = false
+	self.Hidden = true
 end
 
 local function makeModal(self: Window, restore: boolean?)
-    self.DragController.Locked = if restore then false else true
-    self.ResizeController.Locked = if restore then false else true
-    
-    local buttons = self.TopBarButtons
+	self.DragController.Locked = if restore then false else true
+	self.ResizeController.Locked = if restore then false else true
 
-    if restore then
-        buttons.Maximize:Enable()
-        buttons.Restore:Enable()
-        buttons.Minimize:Enable()
-    else
-        buttons.Maximize:Disable()
-        buttons.Restore:Disable()
-        buttons.Minimize:Disable()
-    end
+	local buttons = self.TopBarButtons
+
+	if restore then
+		buttons.Maximize:Enable()
+		buttons.Restore:Enable()
+		buttons.Minimize:Enable()
+	else
+		buttons.Maximize:Disable()
+		buttons.Restore:Disable()
+		buttons.Minimize:Disable()
+	end
 end
 
 function Window.SetParent(self: Window, parent: Instance)
-    if parent:IsA("GuiObject") then
-        makeModal(self)
-    else
-        makeModal(self, true)
-    end
+	if parent:IsA('GuiObject') then
+		makeModal(self)
+	else
+		makeModal(self, true)
+	end
 
-    self.Instance.Parent = parent
+	self.Instance.Parent = parent
 end
 
 function Window.GetContent(self: Window): GuiObject
-    return self.Content.Instance
+	return self.Content.Instance
 end
 
 function Window.Destroy(self: Window)
-    self.ResizeController:Destroy()
-    self.DragController:Destroy()
+	for _, button in self.TopBarButtons do
+		button:Destroy()
+	end
 
-    for _, button in self.TopBarButtons do
-        button:Destroy()
-    end
-
-    self.Content:Destroy()
-    self.DropShadow:Destroy()
-    self.Instance:Destroy()
-
-    setmetatable(self :: any, nil)
-    table.clear(self :: any)
+	self.Content:Destroy()
+	self.Instance:Destroy()
 end
 
 return Window
