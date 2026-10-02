@@ -14,7 +14,6 @@ type Directions = {
 }
 
 type ResizeControllerProps = {
-	ClassName: 'NovaUI.ResizeController',
 	Adornee: GuiObject,
 	Directions: Directions,
 	Enabled: boolean,
@@ -44,15 +43,22 @@ type Direction = 'Left' | 'Right' | 'Top' | 'Bottom' | 'TopLeft' | 'BottomLeft' 
 local ResizeController = {}
 ResizeController.__index = ResizeController
 
+ResizeController.ClassName = 'NovaUI.ResizeController'
+
 export type ResizeController = typeof(setmetatable({} :: ResizeControllerProps, ResizeController))
 
 function ResizeController.__tostring(self: ResizeController)
-	return self.ClassName
+	return ResizeController.ClassName
 end
 
 local Controllers: { ResizeController } = {}
 
-local PlayerMouse = Players.LocalPlayer:GetMouse()
+local function setMouseIcon(icon: string)
+	local localPlayer = Players.LocalPlayer
+	if localPlayer then
+		localPlayer:GetMouse().Icon = icon
+	end
+end
 
 local CursorIcons: { [Direction]: string } = {
 	Left = 'rbxasset://textures/StudioUIEditor/icon_resize2.png',
@@ -156,7 +162,6 @@ end
 function ResizeController.new(adornee: GuiObject): ResizeController
 	local self: ResizeController = setmetatable({}, ResizeController)
 
-	self.ClassName = 'NovaUI.ResizeController'
 	self.Adornee = adornee
 	self.Directions = {
 		Left = true,
@@ -204,13 +209,13 @@ function ResizeController.new(adornee: GuiObject): ResizeController
 		end
 	end)
 
+	connections[2] = adornee.Destroying:Once(function()
+		self:Destroy()
+	end)
+
 	self.Connections = connections
 
 	table.insert(Controllers, 1, self)
-
-	adornee.Destroying:Once(function()
-		self:Destroy()
-	end)
 
 	return self
 end
@@ -272,14 +277,14 @@ UserInputService.InputChanged:Connect(function(input)
 			controller.ResizeDirection = direction
 			if direction then
 				lastDirection = direction
-				PlayerMouse.Icon = CursorIcons[direction]
+				setMouseIcon(CursorIcons[direction])
 				return
 			end
 		end
 
 		if lastDirection then
 			lastDirection = nil
-			PlayerMouse.Icon = ''
+			setMouseIcon('')
 		end
 	end
 end)

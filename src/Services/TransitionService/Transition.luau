@@ -3,21 +3,8 @@ local TypeUtils = require(script.Parent.Parent.Parent.Utils.TypeUtils)
 local TweenService = game:GetService('TweenService')
 local Preferences = require(script.Parent.Parent.Parent.Registry.Preferences)
 
-type TransitionImpl = {
-	__index: TransitionImpl,
-	__tostring: (self: Transition) -> 'NovaUI.Transition',
-	new: (instance: Instance, preset: Preset) -> Transition,
-	Play: (self: Transition) -> (),
-	Replay: (self: Transition) -> (),
-	Pause: (self: Transition) -> (),
-	Cancel: (self: Transition) -> (),
-	Apply: (self: Transition) -> (),
-	Destroy: (self: Transition) -> (),
-}
-
-type self = {
-	ClassName: 'NovaUI.Transition',
-	Instance: Instance?,
+type TransitionProps = {
+	Adornee: Instance?,
 	TweenInfo: TweenInfo,
 	PropertyTable: PropertyTable,
 	Completed: Signal.Signal<Enum.PlaybackState>,
@@ -39,13 +26,15 @@ export type Preset<T = Instance> = {
 	Reverses: boolean?,
 }
 
-export type Transition = setmetatable<self, TransitionImpl>
-
-local Transition = {} :: TransitionImpl
+local Transition = {}
 Transition.__index = Transition
 
-function Transition:__tostring(): 'NovaUI.Transition'
-	return 'NovaUI.Transition'
+Transition.ClassName = 'NovaUI.Transition'
+
+export type Transition = typeof(setmetatable({} :: TransitionProps, Transition))
+
+function Transition:__tostring()
+	return Transition.ClassName
 end
 
 local function getPropertyTable(propertyTable: PropertyTable)
@@ -53,7 +42,7 @@ local function getPropertyTable(propertyTable: PropertyTable)
 end
 
 local function initTween(self: Transition): Tween
-	local tween = TweenService:Create(self.Instance, self.TweenInfo, getPropertyTable(self.PropertyTable))
+	local tween = TweenService:Create(self.Adornee, self.TweenInfo, getPropertyTable(self.PropertyTable))
 
 	self._tween = tween
 	self.PlaybackState = Enum.PlaybackState.Begin
@@ -66,7 +55,7 @@ local function initTween(self: Transition): Tween
 	return tween
 end
 
-function Transition.new(instance: Instance, preset: Preset): Transition
+function Transition.new(adornee: Instance, preset: Preset): Transition
 	local self: Transition = setmetatable({}, Transition)
 
 	local tweenInfo = TweenInfo.new(
@@ -78,15 +67,14 @@ function Transition.new(instance: Instance, preset: Preset): Transition
 		preset.DelayTime or 0
 	)
 
-	self.ClassName = 'Transition'
-	self.Instance = instance
+	self.Adornee = adornee
 	self.TweenInfo = tweenInfo
 	self.PropertyTable = preset.PropertyTable
 	self.Completed = Signal.new()
 	self.PlaybackState = Enum.PlaybackState.Begin
 	self.Destroying = Signal.new()
 
-	instance.Destroying:Once(function()
+	adornee.Destroying:Once(function()
 		self:Destroy()
 	end)
 
@@ -94,7 +82,7 @@ function Transition.new(instance: Instance, preset: Preset): Transition
 end
 
 function Transition.Play(self: Transition)
-	if not self.Instance then
+	if not self.Adornee then
 		return
 	end
 
@@ -150,7 +138,7 @@ function Transition.Cancel(self: Transition)
 end
 
 function Transition.Apply(self: Transition)
-	local instance = self.Instance
+	local instance = self.Adornee
 	if not instance then
 		return
 	end
@@ -166,9 +154,9 @@ function Transition.Apply(self: Transition)
 end
 
 function Transition.Destroy(self: Transition)
-	self.Destroying:FireSync()
-	self.Instance = nil
 	Transition:Cancel()
+	self.Adornee = nil
+	self.Destroying:FireSync()
 end
 
 return Transition

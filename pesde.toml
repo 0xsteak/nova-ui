@@ -29,4 +29,5 @@ Signal = { wally = "molyidev/signal", version = "^1.0.3" }
 scripts = { name = "pesde/scripts_rojo", version = "^0.2.0", target = "lune" }
 Jest = { wally = "jsdotlua/jest", version = "^3.10.0" }
 JestGlobals = { wally = "jsdotlua/jest-globals", version = "^3.10.0" }
+TestEZ = { wally = "roblox/testez", version = "^0.4.1" }
 

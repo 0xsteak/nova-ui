@@ -13,7 +13,8 @@
         "panel": "shared",
         "showReuseMessage": false,
         "clear": true
-      }
+      },
+      "problemMatcher": []
     },
     {
       "label": "Start Sourcemap Watch",
@@ -25,13 +26,40 @@
         "panel": "shared",
         "showReuseMessage": false,
         "clear": true
-      }
+      },
+      "problemMatcher": []
     },
     {
       "label": "Start Rojo Server & Sourcemap",
       "type": "shell",
       "problemMatcher": [],
       "dependsOn": ["Start Rojo Server", "Start Sourcemap Watch"]
+    },
+    {
+      "label": "Run Jest Tests",
+      "type": "shell",
+      "command": "lune run tests",
+      "presentation": {
+        "group": "test",
+        "reveal": "silent",
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Run TestEZ Tests",
+      "type": "shell",
+      "command": "lune run tests testez",
+      "presentation": {
+        "group": "test",
+        "reveal": "silent",
+        "panel": "shared",
+        "showReuseMessage": false,
+        "clear": true
+      },
+      "problemMatcher": []
     }
   ]
 }

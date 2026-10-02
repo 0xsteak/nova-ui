@@ -6,12 +6,13 @@ export type BlueprintData<T = Instance> = {
 } & TypeUtils.PropertiesTable<T>
 
 type BlueprintProps = {
-	ClassName: 'NovaUI.Blueprint',
 	Data: BlueprintData,
 }
 
 local Blueprint = {}
 Blueprint.__index = Blueprint
+
+Blueprint.ClassName = 'NovaUI.Blueprint'
 
 export type Blueprint = typeof(setmetatable({} :: BlueprintProps, Blueprint))
 
@@ -40,13 +41,12 @@ local function buildFromData(blueprintData: BlueprintData): Instance
 end
 
 function Blueprint.__tostring(self: Blueprint)
-	return self.ClassName
+	return Blueprint.ClassName
 end
 
 function Blueprint.new(blueprintData: BlueprintData): Blueprint
 	local self = setmetatable({}, Blueprint) :: Blueprint
 
-	self.ClassName = 'NovaUI.Blueprint'
 	self.Data = blueprintData
 
 	return self

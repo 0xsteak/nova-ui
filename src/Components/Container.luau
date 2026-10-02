@@ -1,7 +1,6 @@
 local BaseLayout = require(script.Parent.Parent.Types.BaseLayout)
 
 type ContainerProps = {
-	ClassName: 'NovaUI.Container',
 	Instance: GuiObject,
 	Layout: BaseLayout.BaseLayout?,
 }
@@ -9,16 +8,17 @@ type ContainerProps = {
 local Container = {}
 Container.__index = Container
 
+Container.ClassName = 'NovaUI.Container'
+
 export type Container = typeof(setmetatable({} :: ContainerProps, Container))
 
 function Container.__tostring(self: Container)
-	return self.ClassName
+	return Container.ClassName
 end
 
 function Container.new(): Container
 	local self: Container = setmetatable({}, Container)
 
-	self.ClassName = 'NovaUI.Container'
 	self.Instance = Instance.new('Frame')
 
 	return self

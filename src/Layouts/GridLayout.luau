@@ -1,5 +1,4 @@
 type GridLayoutProps = {
-	ClassName: 'NovaUI.GridLayout',
 	Adornee: GuiObject?,
 	Instance: UIGridLayout,
 	AdorneeConnection: RBXScriptConnection,
@@ -8,16 +7,17 @@ type GridLayoutProps = {
 local GridLayout = {}
 GridLayout.__index = GridLayout
 
+GridLayout.ClassName = 'NovaUI.GridLayout'
+
 export type GridLayout = typeof(setmetatable({} :: GridLayoutProps, GridLayout))
 
 function GridLayout.__tostring(self: GridLayout)
-	return self.ClassName
+	return GridLayout.ClassName
 end
 
 function GridLayout.new(): GridLayout
 	local self: GridLayout = setmetatable({}, GridLayout)
 
-	self.ClassName = 'NovaUI.GridLayout'
 	self.Instance = Instance.new('UIGridLayout')
 
 	return self
@@ -31,13 +31,18 @@ function GridLayout.SetAdornee(self: GridLayout, adornee: GuiObject?)
 	self.Adornee = adornee
 	self.Instance.Parent = adornee
 
-	self.AdorneeConnection = adornee.Destroying:Once(function()
-		self:Destroy()
-	end)
+	if adornee then
+		self.AdorneeConnection = adornee.Destroying:Once(function()
+			self:Destroy()
+		end)
+	end
 end
 
 function GridLayout.Destroy(self: GridLayout)
 	self.Instance:Destroy()
+	if self.AdorneeConnection then
+		self.AdorneeConnection:Disconnect()
+	end
 end
 
 return GridLayout

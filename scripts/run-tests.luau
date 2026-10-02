@@ -8,6 +8,7 @@ end)
 local status, result = Jest.runCLI(ReplicatedStorage.Nova, {
 	ci = false,
 	verbose = false,
+	passWithNoTests = true,
 }, { ReplicatedStorage.Nova }):awaitStatus()
 
 if status == 'Rejected' then

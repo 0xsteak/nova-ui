@@ -2,7 +2,6 @@ local Blueprint = require(script.Parent.Parent.Parent.Classes.Blueprint)
 local GuiInputService = require(script.Parent.Parent.Parent.Services.GuiInputService)
 
 type ButtonProps = {
-	ClassName: 'NovaUI.Button',
 	Instance: ImageButton,
 	Callback: () -> (),
 	Enabled: boolean,
@@ -10,6 +9,8 @@ type ButtonProps = {
 
 local Button = {}
 Button.__index = Button
+
+Button.ClassName = 'NovaUI.Button'
 
 export type Button = typeof(setmetatable({} :: ButtonProps, Button))
 
@@ -21,7 +22,7 @@ local BaseBlueprint = Blueprint.new({
 } :: Blueprint.BlueprintData<ImageButton>)
 
 function Button.__tostring(self: Button)
-	return self.ClassName
+	return Button.ClassName
 end
 
 function Button.new(callback: (() -> ())?): Button
@@ -29,7 +30,6 @@ function Button.new(callback: (() -> ())?): Button
 
 	local instance = BaseBlueprint:Build()
 
-	self.ClassName = 'NovaUI.Button'
 	self.Instance = instance
 	self.Callback = callback or function() end
 	self.Enabled = true

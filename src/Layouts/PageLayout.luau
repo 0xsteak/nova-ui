@@ -1,24 +1,26 @@
 type PageLayoutProps = {
-	ClassName: 'NovaUI.PageLayout',
 	Adornee: GuiObject?,
 	Instance: UIPageLayout,
-	AdorneeConnection: RBXScriptConnection,
+	AdorneeConnection: RBXScriptConnection?,
 }
 
 local PageLayout = {}
 PageLayout.__index = PageLayout
 
+PageLayout.ClassName = 'NovaUI.PageLayout'
+
 export type PageLayout = typeof(setmetatable({} :: PageLayoutProps, PageLayout))
 
 function PageLayout.__tostring(self: PageLayout)
-	return self.ClassName
+	return PageLayout.ClassName
 end
 
-function PageLayout.new(): PageLayout
+function PageLayout.new(adornee: GuiObject?): PageLayout
 	local self: PageLayout = setmetatable({}, PageLayout)
 
-	self.ClassName = 'NovaUI.PageLayout'
 	self.Instance = Instance.new('UIPageLayout')
+
+	self:SetAdornee(adornee)
 
 	return self
 end
@@ -31,9 +33,11 @@ function PageLayout.SetAdornee(self: PageLayout, adornee: GuiObject?)
 	self.Adornee = adornee
 	self.Instance.Parent = adornee
 
-	self.AdorneeConnection = adornee.Destroying:Once(function()
-		self:Destroy()
-	end)
+	if adornee then
+		self.AdorneeConnection = adornee.Destroying:Once(function()
+			self:Destroy()
+		end)
+	end
 end
 
 function PageLayout.JumpTo(self: PageLayout, page: Instance)
@@ -54,6 +58,9 @@ end
 
 function PageLayout.Destroy(self: PageLayout)
 	self.Instance:Destroy()
+	if self.AdorneeConnection then
+		self.AdorneeConnection:Disconnect()
+	end
 end
 
 return PageLayout

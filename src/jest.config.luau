@@ -1,3 +1,3 @@
 return {
-	testMatch = { 'Nova/__tests__/**/*.spec' },
+	testMatch = { 'Nova/__tests__/**/*.test' },
 }

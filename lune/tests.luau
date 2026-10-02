@@ -11,16 +11,23 @@ process.exec('rojo', {
 	'place.project.json',
 })
 
-process.exec('rocale-cli', {
-	'run',
-	'-u',
-	`{config.UNIVERSE_ID}`,
-	'-p',
-	`{config.PLACE_ID}`,
-	'--apiKey',
-	config.ROBLOX_API_KEY,
-	'--load.place',
+-- process.exec('rocale-cli', {
+-- 	'run',
+-- 	'-u',
+-- 	`{config.UNIVERSE_ID}`,
+-- 	'-p',
+-- 	`{config.PLACE_ID}`,
+-- 	'--apiKey',
+-- 	config.ROBLOX_API_KEY,
+-- 	'--load.place',
+-- 	'Place.rbxl',
+-- 	'--script',
+-- 	'scripts/run-tests.luau',
+-- }, { stdio = 'forward' })
+
+process.exec('run-in-roblox', {
+	'--place',
 	'Place.rbxl',
 	'--script',
-	'scripts/run-tests.luau',
+	if process.args[1] == 'testez' then 'scripts/run-tests-testez.luau' else 'scripts/run-tests.luau',
 }, { stdio = 'forward' })

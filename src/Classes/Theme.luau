@@ -12,7 +12,6 @@ export type ColorTokens = {
 }
 
 type ThemeProps = {
-	ClassName: 'NovaUI.Theme',
 	Id: string,
 	Name: string,
 	Author: string,
@@ -22,16 +21,17 @@ type ThemeProps = {
 local Theme = {}
 Theme.__index = Theme
 
+Theme.ClassName = 'NovaUI.Theme'
+
 export type Theme = typeof(setmetatable({} :: ThemeProps, Theme))
 
 function Theme.__tostring(self: Theme)
-	return self.ClassName
+	return Theme.ClassName
 end
 
 function Theme.new(name: string, author: string, id: string?, colorTokens: ColorTokens): Theme
 	local self: Theme = setmetatable({}, Theme)
 
-	self.ClassName = 'NovaUI.Theme'
 	self.Id = id or HttpService:GenerateGUID(false)
 	self.Name = name
 	self.Author = author

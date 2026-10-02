@@ -20,7 +20,6 @@ type instance = Frame & {
 }
 
 type ScrollViewProps = {
-	ClassName: 'NovaUI.ScrollView',
 	Instance: instance,
 	Connections: { RBXScriptConnection },
 	ScrollingDirection: Enum.ScrollingDirection,
@@ -32,6 +31,8 @@ type ScrollViewProps = {
 		ShowHScrollBar: TransitionGroup.TransitionGroup,
 		HideHScrollBar: TransitionGroup.TransitionGroup,
 	},
+	_verticalHideThread: thread?,
+	_horizontalHideThread: thread?,
 }
 
 type ScrollViewOptions = {
@@ -44,10 +45,12 @@ type ScrollViewOptions = {
 local ScrollView = {}
 ScrollView.__index = ScrollView
 
+ScrollView.ClassName = 'NovaUI.ScrollView'
+
 export type ScrollView = typeof(setmetatable({} :: ScrollViewProps, ScrollView))
 
 function ScrollView.__tostring(self: ScrollView)
-	return self.ClassName
+	return ScrollView.ClassName
 end
 
 local TRACK_TRANSPARENCY = 0.9
@@ -200,7 +203,7 @@ local DefaultOptions: ScrollViewOptions = {
 	CanvasSize = UDim2.new(),
 }
 
-function ScrollView.new(options: ScrollViewOptions): ScrollView
+function ScrollView.new(options: ScrollViewOptions?): ScrollView
 	options = TableUtils.Merge(DefaultOptions, options)
 
 	local self: ScrollView = setmetatable({}, ScrollView)
@@ -214,7 +217,6 @@ function ScrollView.new(options: ScrollViewOptions): ScrollView
 	local hScrollBarTrack = hScrollBar.Track
 	local hScrollBarThumb = hScrollBar.Thumb
 
-	self.ClassName = 'NovaUI.ScrollView'
 	self.Instance = instance
 	self.Connections = {}
 
@@ -315,16 +317,13 @@ function ScrollView.new(options: ScrollViewOptions): ScrollView
 		)
 	end
 
-	local verticalHideThread: thread
-	local horizontalHideThread: thread
-
 	local function showVScrollBar()
 		if self.ScrollingDirection == Enum.ScrollingDirection.X then
 			return
 		end
 
-		if verticalHideThread then
-			task.cancel(verticalHideThread)
+		if self._verticalHideThread then
+			task.cancel(self._verticalHideThread)
 		end
 
 		vScrollBarVisible = true
@@ -338,7 +337,7 @@ function ScrollView.new(options: ScrollViewOptions): ScrollView
 
 	local function hideVScrollBar()
 		vScrollBarVisible = false
-		verticalHideThread = task.delay(1, _hideVScrollBarFunc)
+		self._verticalHideThread = task.delay(1, _hideVScrollBarFunc)
 	end
 
 	local function showHScrollBar()
@@ -346,8 +345,8 @@ function ScrollView.new(options: ScrollViewOptions): ScrollView
 			return
 		end
 
-		if horizontalHideThread then
-			task.cancel(horizontalHideThread)
+		if self._horizontalHideThread then
+			task.cancel(self._horizontalHideThread)
 		end
 
 		hScrollBarVisible = true
@@ -356,12 +355,12 @@ function ScrollView.new(options: ScrollViewOptions): ScrollView
 	end
 
 	local function _hideHScrollBarFunc()
-		transitionGroups.HideHScrollBar:ReplayAll()
+		self.TransitionGroups.HideHScrollBar:ReplayAll()
 	end
 
 	local function hideHScrollBar()
 		hScrollBarVisible = false
-		horizontalHideThread = task.delay(1, _hideHScrollBarFunc)
+		self._horizontalHideThread = task.delay(1, _hideHScrollBarFunc)
 	end
 
 	local function updateTheseScrollBars()
@@ -569,6 +568,12 @@ function ScrollView.Destroy(self: ScrollView)
 
 	for _, connection in self.Connections do
 		connection:Disconnect()
+	end
+	if self._verticalHideThread then
+		task.cancel(self._verticalHideThread)
+	end
+	if self._horizontalHideThread then
+		task.cancel(self._horizontalHideThread)
 	end
 
 	instance:Destroy()

@@ -1,20 +1,8 @@
 local Transition = require(script.Parent.Transition)
 
-type TransitionGroupImpl = {
-	__index: TransitionGroupImpl,
-	__tostring: (self: TransitionGroup) -> 'NovaUI.TransitionGroup',
-	new: (instances: { [string]: Instance }, preset: Preset) -> TransitionGroup,
-	ReplayAll: (self: TransitionGroup) -> TransitionGroup,
-	CancelAll: (self: TransitionGroup) -> TransitionGroup,
-	ApplyAll: (self: TransitionGroup) -> TransitionGroup,
-}
-
-type self = {
-	ClassName: 'NovaUI.TransitionGroup',
+type TransitionGroupProps = {
 	Transitions: { [string]: Transition.Transition },
 }
-
-export type TransitionGroup = setmetatable<self, TransitionGroupImpl>
 
 export type Preset = {
 	_base: {
@@ -28,17 +16,20 @@ export type Preset = {
 	[string]: Transition.Preset,
 }
 
-local TransitionGroup = {} :: TransitionGroupImpl
+local TransitionGroup = {}
 TransitionGroup.__index = TransitionGroup
 
-function TransitionGroup:__tostring(): 'NovaUI.TransitionGroup'
-	return 'NovaUI.TransitionGroup'
+TransitionGroup.ClassName = 'NovaUI.TransitionGroup'
+
+export type TransitionGroup = typeof(setmetatable({} :: TransitionGroupProps, TransitionGroup))
+
+function TransitionGroup:__tostring()
+	return TransitionGroup.ClassName
 end
 
 function TransitionGroup.new(instances: { [string]: Instance }, preset: Preset): TransitionGroup
 	local self: TransitionGroup = setmetatable({}, TransitionGroup)
 
-	self.ClassName = 'TransitionGroup'
 	self.Transitions = {}
 
 	local _base = preset._base or {}
@@ -80,6 +71,13 @@ function TransitionGroup.ApplyAll(self: TransitionGroup)
 	for _, transition in self.Transitions do
 		transition:Apply()
 	end
+end
+
+function TransitionGroup.Destroy(self: TransitionGroup)
+	for _, transition in self.Transitions do
+		transition:Destroy()
+	end
+	table.clear(self.Transitions)
 end
 
 return TransitionGroup

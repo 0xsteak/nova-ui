@@ -2,7 +2,6 @@ local Signal = require(script.Parent.Parent.Packages.Signal)
 local UserInputService = game:GetService('UserInputService')
 
 type DragControllerProps = {
-	ClassName: 'NovaUI.DragController',
 	Adornee: GuiObject,
 	DragHandle: GuiObject,
 	Enabled: boolean,
@@ -16,10 +15,12 @@ type DragControllerProps = {
 local DragController = {}
 DragController.__index = DragController
 
+DragController.ClassName = 'NovaUI.DragController'
+
 export type DragController = typeof(setmetatable({} :: DragControllerProps, DragController))
 
 function DragController.__tostring(self: DragController)
-	return self.ClassName
+	return DragController.ClassName
 end
 
 local Controllers: { DragController } = {}
@@ -33,7 +34,6 @@ local changedInputType = if UserInputService.TouchEnabled
 function DragController.new(adornee: GuiObject, dragHandle: GuiObject): DragController
 	local self: DragController = setmetatable({}, DragController)
 
-	self.ClassName = 'NovaUI.DragController'
 	self.Adornee = adornee
 	self.DragHandle = dragHandle
 	self.Enabled = true
@@ -68,13 +68,13 @@ function DragController.new(adornee: GuiObject, dragHandle: GuiObject): DragCont
 		end
 	end)
 
+	connections[2] = adornee.Destroying:Once(function()
+		self:Destroy()
+	end)
+
 	self.Connections = connections
 
 	table.insert(Controllers, 1, self)
-
-	adornee.Destroying:Once(function()
-		self:Destroy()
-	end)
 
 	return self
 end

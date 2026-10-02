@@ -29,7 +29,6 @@ type instance = CanvasGroup & {
 }
 
 type WindowProps = {
-	ClassName: 'NovaUI.Window',
 	Instance: instance,
 	Title: string,
 	Icon: Icon.Icon?,
@@ -65,10 +64,12 @@ export type WindowOptions = {
 local Window = {}
 Window.__index = Window
 
+Window.ClassName = 'NovaUI.Window'
+
 export type Window = typeof(setmetatable({} :: WindowProps, Window))
 
 function Window.__tostring(self: Window)
-	return self.ClassName
+	return Window.ClassName
 end
 
 local _basePreset = {
@@ -270,7 +271,7 @@ local DefaultOptions: WindowOptions = {
 	Resizable = true,
 }
 
-function Window.new(options: WindowOptions): Window
+function Window.new(options: WindowOptions?): Window
 	options = TableUtils.Merge(DefaultOptions, options)
 
 	local self: Window = setmetatable({}, Window)
@@ -287,7 +288,6 @@ function Window.new(options: WindowOptions): Window
 	Preferences.FontFamilyChanged:Connect(updateTitleFont)
 	updateTitleFont()
 
-	self.ClassName = 'NovaUI.Window'
 	self.Instance = instance
 	self.TopBarButtons = {}
 	self.Hidden = false

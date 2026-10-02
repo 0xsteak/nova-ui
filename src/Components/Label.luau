@@ -3,14 +3,15 @@ local Blueprint = require(script.Parent.Parent.Classes.Blueprint)
 local ThemeService = require(script.Parent.Parent.Services.ThemeService)
 local Preferences = require(script.Parent.Parent.Registry.Preferences)
 local TextService = game:GetService('TextService')
+local Signal = require(script.Parent.Parent.Packages.Signal)
 
 type DisplayMode = 'Fixed' | 'AutoHeight'
 
 type LabelProps = {
-	ClassName: 'NovaUI.Label',
 	Instance: TextLabel,
 	Params: GetTextBoundsParams,
 	DisplayMode: DisplayMode,
+	Connections: { Signal.Connection },
 	_updateThreadId: number,
 }
 
@@ -28,10 +29,12 @@ type LabelOptions = {
 local Label = {}
 Label.__index = Label
 
+Label.ClassName = 'NovaUI.Label'
+
 export type Label = typeof(setmetatable({} :: LabelProps, Label))
 
 function Label.__tostring(self: Label)
-	return self.ClassName
+	return Label.ClassName
 end
 
 local BaseBlueprint = Blueprint.new({
@@ -78,17 +81,18 @@ local DefaultOptions = {
 	DisplayMode = 'Fixed',
 } :: LabelOptions
 
-function Label.new(options: LabelOptions): Label
+function Label.new(options: LabelOptions?): Label
 	options = TableUtils.Merge(DefaultOptions, options)
 
 	local self: Label = setmetatable({}, Label)
 
 	local instance = BaseBlueprint:Build() :: TextLabel
 
-	self.ClassName = 'NovaUI.Label'
 	self.Instance = instance
 	self.DisplayMode = options.DisplayMode
 	self._updateThreadId = 0
+
+	local connections = {}
 
 	local params = Instance.new('GetTextBoundsParams')
 	self.Params = params
@@ -120,12 +124,14 @@ function Label.new(options: LabelOptions): Label
 	self:SetTextWrapped(options.DisplayMode == 'AutoHeight' and true or options.TextWrapped)
 	self:SetSize(options.Size)
 
-	Preferences.FontFamilyChanged:Connect(function(newFamily: string)
+	connections[1] = Preferences.FontFamilyChanged:Connect(function(newFamily: string)
 		local font = instance.FontFace
 		font.Family = newFamily
 
 		instance.FontFace = font
 	end)
+
+	self.Connections = connections
 
 	return self
 end
@@ -185,6 +191,10 @@ function Label.Destroy(self: Label)
 
 	instance:Destroy()
 	self.Params:Destroy()
+
+	for _, connection in self.Connections do
+		connection:Disconnect()
+	end
 end
 
 return Label

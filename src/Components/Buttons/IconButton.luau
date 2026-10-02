@@ -29,10 +29,12 @@ type State = 'Idle' | 'Hover' | 'MouseDown' | 'Disabled'
 local IconButton = {}
 IconButton.__index = IconButton
 
+IconButton.ClassName = 'NovaUI.IconButton'
+
 export type IconButton = typeof(setmetatable({} :: IconButtonProps, IconButton))
 
 function IconButton.__tostring(self: IconButton)
-	return self.ClassName
+	return IconButton.ClassName
 end
 
 local _basePreset = {
@@ -136,7 +138,6 @@ end
 
 function IconButton.new(icon: Icon.Icon, callback: (() -> ())?, buttonSize: UDim2?, iconSize: UDim2?): IconButton
 	local self: IconButton = setmetatable({}, IconButton)
-	self.ClassName = 'NovaUI.IconButton'
 	self.Enabled = true
 
 	local button = Button.new(callback)
