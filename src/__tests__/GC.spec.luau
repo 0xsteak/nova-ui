@@ -22,7 +22,7 @@ return function()
 	local OBJECT_FACTORIES: factories = {
 		Window = function()
 			local win = Window.new()
-			local objects = { win, win.Instance, win.Content, win.DragController, win.ResizeController }
+			local objects = { win, win.Base, win.Content, win.DragController, win.ResizeController }
 			for _, button in win.TopBarButtons do
 				table.insert(objects, button)
 			end
@@ -32,17 +32,17 @@ return function()
 			local cont = Container.new()
 			local lout = ListLayout.new()
 			cont:SetLayout(lout)
-			local objects = { cont, cont.Instance, cont.Layout }
+			local objects = { cont, cont.Base, cont.Layout }
 			return objects
 		end,
 		Button = function()
 			local btn = Button.new()
-			local objects = { btn, btn.Instance }
+			local objects = { btn, btn.Base }
 			return objects
 		end,
 		IconButton = function()
 			local iconBtn = IconButton.new(Icon.empty)
-			local objects = { iconBtn, iconBtn.Instance, iconBtn.Button }
+			local objects = { iconBtn, iconBtn.Base, iconBtn.Button }
 			for _, transGroup in iconBtn.TransitionGroups do
 				table.insert(objects, transGroup)
 			end
@@ -50,7 +50,7 @@ return function()
 		end,
 		ScrollView = function()
 			local sView = ScrollView.new()
-			local objects = { sView, sView.Instance }
+			local objects = { sView, sView.Base }
 			for _, transGroup in sView.TransitionGroups do
 				table.insert(objects, transGroup)
 			end
@@ -58,7 +58,7 @@ return function()
 		end,
 		Label = function()
 			local label = Label.new()
-			local objects = { label, label.Instance, label.Params }
+			local objects = { label, label.Base, label._params }
 			return objects
 		end,
 		-- -- -- --
@@ -77,17 +77,17 @@ return function()
 		-- -- -- --
 		ListLayout = function()
 			local list = ListLayout.new()
-			local objects = { list, list.Instance }
+			local objects = { list, list.Base }
 			return objects
 		end,
 		GridLayout = function()
 			local grid = GridLayout.new()
-			local objects = { grid, grid.Instance }
+			local objects = { grid, grid.Base }
 			return objects
 		end,
 		PageLayout = function()
 			local page = PageLayout.new()
-			local objects = { page, page.Instance }
+			local objects = { page, page.Base }
 			return objects
 		end,
 		-- -- -- --
@@ -114,6 +114,8 @@ return function()
 		trackers[objectName] = {}
 		local objects = objectFactory()
 		for i, object in objects do
+			assert(type(object) == 'table' or type(object) == 'userdata', `invalid object ({objectName}, #{i})`)
+
 			trackers[objectName][i] = GcTracker.track(object)
 			if object.Destroy then
 				object:Destroy()

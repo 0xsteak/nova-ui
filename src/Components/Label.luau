@@ -8,10 +8,10 @@ local Signal = require(script.Parent.Parent.Packages.Signal)
 type DisplayMode = 'Fixed' | 'AutoHeight'
 
 type LabelProps = {
-	Instance: TextLabel,
-	Params: GetTextBoundsParams,
+	Base: TextLabel,
 	DisplayMode: DisplayMode,
-	Connections: { Signal.Connection },
+	_params: GetTextBoundsParams,
+	_connections: { Signal.Connection },
 	_updateThreadId: number,
 }
 
@@ -49,14 +49,14 @@ local function updateHeight(self: Label)
 		return
 	end
 
-	local instance: TextLabel = self.Instance
-	local params = self.Params
-	local width = instance.AbsoluteSize.X
+	local base: TextLabel = self.Base
+	local params = self._params
+	local width = base.AbsoluteSize.X
 
-	params.Text = instance.Text
+	params.Text = base.Text
 	params.Width = width
-	params.Size = instance.TextSize
-	params.Font = instance.FontFace
+	params.Size = base.TextSize
+	params.Font = base.FontFace
 
 	local currentThreadId = self._updateThreadId + 1
 	self._updateThreadId = currentThreadId
@@ -67,7 +67,7 @@ local function updateHeight(self: Label)
 		return
 	end
 
-	instance.Size = UDim2.new(instance.Size.X.Scale, instance.Size.X.Offset, 0, height)
+	base.Size = UDim2.new(base.Size.X.Scale, base.Size.X.Offset, 0, height)
 end
 
 local DefaultOptions = {
@@ -86,34 +86,34 @@ function Label.new(options: LabelOptions?): Label
 
 	local self: Label = setmetatable({}, Label)
 
-	local instance = BaseBlueprint:Build() :: TextLabel
+	local base = BaseBlueprint:Build() :: TextLabel
 
-	self.Instance = instance
+	self.Base = base
 	self.DisplayMode = options.DisplayMode
 	self._updateThreadId = 0
 
 	local connections = {}
 
 	local params = Instance.new('GetTextBoundsParams')
-	self.Params = params
+	self._params = params
 
 	local function updateThisHeight()
 		updateHeight(self)
 	end
 
-	local lastWidth = instance.AbsoluteSize.X
-	instance:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
-		local width = instance.AbsoluteSize.X
+	local lastWidth = base.AbsoluteSize.X
+	base:GetPropertyChangedSignal('AbsoluteSize'):Connect(function()
+		local width = base.AbsoluteSize.X
 		if width ~= lastWidth then
 			updateThisHeight()
 			lastWidth = width
 		end
 	end)
-	instance:GetPropertyChangedSignal('Text'):Connect(updateThisHeight)
-	instance:GetPropertyChangedSignal('TextSize'):Connect(updateThisHeight)
-	instance:GetPropertyChangedSignal('FontFace'):Connect(updateThisHeight)
+	base:GetPropertyChangedSignal('Text'):Connect(updateThisHeight)
+	base:GetPropertyChangedSignal('TextSize'):Connect(updateThisHeight)
+	base:GetPropertyChangedSignal('FontFace'):Connect(updateThisHeight)
 
-	ThemeService.Bind(instance, 'PrimaryText', 'TextColor3')
+	ThemeService.Bind(base, 'PrimaryText', 'TextColor3')
 	ThemeService.Update()
 
 	self:SetText(options.Text)
@@ -125,74 +125,74 @@ function Label.new(options: LabelOptions?): Label
 	self:SetSize(options.Size)
 
 	connections[1] = Preferences.FontFamilyChanged:Connect(function(newFamily: string)
-		local font = instance.FontFace
+		local font = base.FontFace
 		font.Family = newFamily
 
-		instance.FontFace = font
+		base.FontFace = font
 	end)
 
-	self.Connections = connections
+	self._connections = connections
 
 	return self
 end
 
 function Label.SetText(self: Label, text: string)
-	self.Instance.Text = text
+	self.Base.Text = text
 end
 
 function Label.SetXAlignment(self: Label, alignment: Enum.TextXAlignment)
-	self.Instance.TextXAlignment = alignment
+	self.Base.TextXAlignment = alignment
 end
 
 function Label.SetYAlignment(self: Label, alignment: Enum.TextYAlignment)
-	self.Instance.TextYAlignment = alignment
+	self.Base.TextYAlignment = alignment
 end
 
 function Label.SetTextSize(self: Label, size: number)
-	self.Instance.TextSize = size
+	self.Base.TextSize = size
 end
 
 function Label.SetTextTruncate(self: Label, value: Enum.TextTruncate)
-	self.Instance.TextTruncate = value
+	self.Base.TextTruncate = value
 end
 
 function Label.SetTextWrapped(self: Label, wrapped: boolean)
-	self.Instance.TextWrapped = wrapped
+	self.Base.TextWrapped = wrapped
 end
 
 function Label.SetFontWeight(self: Label, weight: Enum.FontWeight)
-	local instance = self.Instance
+	local base = self.Base
 
-	local font = instance.FontFace
+	local font = base.FontFace
 	font.Weight = weight
 
-	instance.FontFace = font
+	base.FontFace = font
 end
 
 function Label.SetFontStyle(self: Label, style: Enum.FontStyle)
-	local instance = self.Instance
+	local base = self.Base
 
-	local font = instance.FontFace
+	local font = base.FontFace
 	font.Style = style
 
-	instance.FontFace = font
+	base.FontFace = font
 end
 
 function Label.SetSize(self: Label, size: UDim2)
-	self.Instance.Size = size
+	self.Base.Size = size
 end
 
 function Label.SetParent(self: Label, parent: Instance)
-	self.Instance.Parent = parent
+	self.Base.Parent = parent
 end
 
 function Label.Destroy(self: Label)
-	local instance = self.Instance
+	local base = self.Base
 
-	instance:Destroy()
-	self.Params:Destroy()
+	base:Destroy()
+	self._params:Destroy()
 
-	for _, connection in self.Connections do
+	for _, connection in self._connections do
 		connection:Disconnect()
 	end
 end

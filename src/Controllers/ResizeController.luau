@@ -14,21 +14,21 @@ type Directions = {
 }
 
 type ResizeControllerProps = {
-	Adornee: GuiObject,
+	Target: GuiObject,
 	Directions: Directions,
 	Enabled: boolean,
 	Locked: boolean,
 	IsResizing: boolean,
-	ResizeDirection: Direction?,
-	StartInfo: {
+	ResizeMin: Vector2,
+	ResizeMax: Vector2,
+	_resizeDirection: Direction?,
+	_startInfo: {
 		Position: Vector2,
 		Size: Vector2,
 		MousePos: Vector3,
 	},
-	ResizeMin: Vector2,
-	ResizeMax: Vector2,
-	ResizeChanged: Signal.Signal<UDim2, UDim2>,
-	Connections: { RBXScriptConnection },
+	_resizeChanged: Signal.Signal<UDim2, UDim2>,
+	_connections: { RBXScriptConnection },
 }
 
 type Edges = {
@@ -159,10 +159,10 @@ local function getOffset(direction: Direction, mousePos: Vector3, startPos: Vect
 	return Vector2.zero, Vector2.zero
 end
 
-function ResizeController.new(adornee: GuiObject): ResizeController
+function ResizeController.new(target: GuiObject): ResizeController
 	local self: ResizeController = setmetatable({}, ResizeController)
 
-	self.Adornee = adornee
+	self.Target = target
 	self.Directions = {
 		Left = true,
 		Right = true,
@@ -176,11 +176,11 @@ function ResizeController.new(adornee: GuiObject): ResizeController
 	self.Enabled = true
 	self.Locked = false
 	self.IsResizing = false
-	self.ResizeDirection = nil
-	self.StartInfo = {}
+	self._resizeDirection = nil
+	self._startInfo = {}
 	self.ResizeMin = Vector2.new(0, 0)
 	self.ResizeMax = Vector2.new(math.huge, math.huge)
-	self.ResizeChanged = Signal.new()
+	self._resizeChanged = Signal.new()
 
 	local connections: { RBXScriptConnection } = {}
 
@@ -189,12 +189,12 @@ function ResizeController.new(adornee: GuiObject): ResizeController
 			input.UserInputType == Enum.UserInputType.MouseButton1
 			and self.Enabled
 			and not self.Locked
-			and self.ResizeDirection
+			and self._resizeDirection
 		then
-			local startInfo = self.StartInfo
+			local startInfo = self._startInfo
 
-			startInfo.Position = adornee.AbsolutePosition
-			startInfo.Size = adornee.AbsoluteSize
+			startInfo.Position = target.AbsolutePosition
+			startInfo.Size = target.AbsoluteSize
 			startInfo.MousePos = input.Position
 
 			self.IsResizing = true
@@ -209,11 +209,11 @@ function ResizeController.new(adornee: GuiObject): ResizeController
 		end
 	end)
 
-	connections[2] = adornee.Destroying:Once(function()
+	connections[2] = target.Destroying:Once(function()
 		self:Destroy()
 	end)
 
-	self.Connections = connections
+	self._connections = connections
 
 	table.insert(Controllers, 1, self)
 
@@ -221,7 +221,7 @@ function ResizeController.new(adornee: GuiObject): ResizeController
 end
 
 function ResizeController.Destroy(self: ResizeController)
-	for _, connection in self.Connections do
+	for _, connection in self._connections do
 		connection:Disconnect()
 	end
 
@@ -236,14 +236,14 @@ local lastDirection
 UserInputService.InputChanged:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseMovement then
 		for _, controller in Controllers do
-			if not controller.Enabled or controller.Locked or not controller.Adornee.Visible then
+			if not controller.Enabled or controller.Locked or not controller.Target.Visible then
 				continue
 			end
 
 			if controller.IsResizing then
-				local adornee = controller.Adornee
-				local resizeDirection = controller.ResizeDirection
-				local startInfo = controller.StartInfo
+				local target = controller.Target
+				local resizeDirection = controller._resizeDirection
+				local startInfo = controller._startInfo
 				local startPos = startInfo.Position
 				local startSize = startInfo.Size
 				local startMousePos = startInfo.MousePos
@@ -260,21 +260,21 @@ UserInputService.InputChanged:Connect(function(input)
 				local newSizeY = math.round(startSize.Y + offsetY)
 
 				local newPos = UDim2.fromOffset(
-					math.round(startPos.X - offsetX * resizePoint.X + (newSizeX * adornee.AnchorPoint.X)),
-					math.round(startPos.Y - offsetY * resizePoint.Y + (newSizeY * adornee.AnchorPoint.Y))
+					math.round(startPos.X - offsetX * resizePoint.X + (newSizeX * target.AnchorPoint.X)),
+					math.round(startPos.Y - offsetY * resizePoint.Y + (newSizeY * target.AnchorPoint.Y))
 				)
 				local newSize = UDim2.fromOffset(newSizeX, newSizeY)
 
-				adornee.Position = newPos
-				adornee.Size = newSize
+				target.Position = newPos
+				target.Size = newSize
 
-				controller.ResizeChanged:Fire(newPos, newSize)
+				controller._resizeChanged:Fire(newPos, newSize)
 
 				return
 			end
 
-			local direction = getDirection(input.Position, controller.Adornee, controller.Directions)
-			controller.ResizeDirection = direction
+			local direction = getDirection(input.Position, controller.Target, controller.Directions)
+			controller._resizeDirection = direction
 			if direction then
 				lastDirection = direction
 				setMouseIcon(CursorIcons[direction])

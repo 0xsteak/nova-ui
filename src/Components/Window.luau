@@ -13,7 +13,7 @@ local TransitionService = require(script.Parent.Parent.Services.TransitionServic
 local Transition = require(script.Parent.Parent.Services.TransitionService.Transition)
 local TransitionGroup = require(script.Parent.Parent.Services.TransitionService.TransitionGroup)
 
-type instance = CanvasGroup & {
+type base = CanvasGroup & {
 	TopBar: Frame & {
 		Title: TextLabel,
 		Icon: ImageLabel,
@@ -29,13 +29,11 @@ type instance = CanvasGroup & {
 }
 
 type WindowProps = {
-	Instance: instance,
+	Base: base,
 	Title: string,
 	Icon: Icon.Icon?,
 	Position: UDim2,
 	Size: UDim2,
-	OriginalSize: UDim2,
-	OriginalPosition: UDim2,
 	TopBarButtons: { [string]: IconButton.IconButton },
 	DragController: DragController.DragController,
 	ResizeController: ResizeController.ResizeController,
@@ -50,6 +48,8 @@ type WindowProps = {
 		Hide: TransitionGroup.TransitionGroup,
 	},
 	Hidden: boolean,
+	_originalSize: UDim2,
+	_originalPosition: UDim2,
 }
 
 export type WindowOptions = {
@@ -215,35 +215,35 @@ local function maximizeToggle(self: Window, restore: boolean?)
 	self.DragController.Locked = if restore then false else true
 	self.ResizeController.Locked = if restore then false else true
 
-	buttons.Restore.Instance.Visible = if restore then false else true
-	buttons.Maximize.Instance.Visible = if restore then true else false
+	buttons.Restore.Base.Visible = if restore then false else true
+	buttons.Maximize.Base.Visible = if restore then true else false
 end
 
 local function initTopBarButtons(self: Window)
 	local close = self:CreateTopBarButton('Close', closeIcon, function()
 		self:Hide()
 	end)
-	close.Instance.LayoutOrder = 3
+	close.Base.LayoutOrder = 3
 
 	local maximize = self:CreateTopBarButton('Maximize', maximizeIcon, function()
 		maximizeToggle(self)
 	end)
-	maximize.Instance.LayoutOrder = 2
+	maximize.Base.LayoutOrder = 2
 
 	local restore = self:CreateTopBarButton('Restore', restoreIcon, function()
 		maximizeToggle(self, true)
 	end)
-	restore.Instance.Visible = false
-	restore.Instance.LayoutOrder = 2
+	restore.Base.Visible = false
+	restore.Base.LayoutOrder = 2
 
 	local minimize = self:CreateTopBarButton('Minimize', minimizeIcon, function()
 		self:Hide()
 	end)
-	minimize.Instance.LayoutOrder = 1
+	minimize.Base.LayoutOrder = 1
 end
 
 local function updateTopBar(self: Window)
-	local topBar = (self.Instance :: instance).TopBar
+	local topBar = (self.Base :: base).TopBar
 	local icon = topBar.Icon
 	local title = topBar.Title
 	local buttons = topBar.Buttons
@@ -276,8 +276,8 @@ function Window.new(options: WindowOptions?): Window
 
 	local self: Window = setmetatable({}, Window)
 
-	local instance = BaseBlueprint:Build() :: instance
-	local topBar = instance.TopBar
+	local base = BaseBlueprint:Build() :: base
+	local topBar = base.TopBar
 	local icon = topBar.Icon
 	local buttons = topBar.Buttons
 	local listLayout = buttons.UIListLayout
@@ -288,28 +288,24 @@ function Window.new(options: WindowOptions?): Window
 	Preferences.FontFamilyChanged:Connect(updateTitleFont)
 	updateTitleFont()
 
-	self.Instance = instance
+	self.Base = base
 	self.TopBarButtons = {}
 	self.Hidden = false
 
 	local restorePreset: Transition.Preset = table.clone(_basePreset)
 	restorePreset.PropertyTable = function()
 		return {
-			Position = self.OriginalPosition,
-			Size = self.OriginalSize,
+			Position = self._originalPosition,
+			Size = self._originalSize,
 		} :: Transition.PropertyTable<CanvasGroup>
 	end
 
-	local showTransition = TransitionService.CreateGroup(
-		{ Window = instance, UIScale = instance.UIScale, UIShadow = instance.UIShadow },
-		ShowPreset
-	)
-	local hideTransition = TransitionService.CreateGroup(
-		{ Window = instance, UIScale = instance.UIScale, UIShadow = instance.UIShadow },
-		HidePreset
-	)
-	local maximizeTransition = TransitionService.Create(instance, MaximizePreset)
-	local restoreTransition = TransitionService.Create(instance, restorePreset)
+	local showTransition =
+		TransitionService.CreateGroup({ Window = base, UIScale = base.UIScale, UIShadow = base.UIShadow }, ShowPreset)
+	local hideTransition =
+		TransitionService.CreateGroup({ Window = base, UIScale = base.UIScale, UIShadow = base.UIShadow }, HidePreset)
+	local maximizeTransition = TransitionService.Create(base, MaximizePreset)
+	local restoreTransition = TransitionService.Create(base, restorePreset)
 
 	self.TransitionGroups = {
 		Show = showTransition,
@@ -320,7 +316,7 @@ function Window.new(options: WindowOptions?): Window
 		Restore = restoreTransition,
 	}
 
-	ThemeService.Bind(instance, 'Background', 'BackgroundColor3')
+	ThemeService.Bind(base, 'Background', 'BackgroundColor3')
 	ThemeService.Bind(topBar.Title, 'PrimaryText', 'TextColor3')
 	ThemeService.Bind(icon, 'Accent', 'ImageColor3')
 
@@ -346,25 +342,25 @@ function Window.new(options: WindowOptions?): Window
 	topBar:GetPropertyChangedSignal('Size'):Connect(updateThisTopBar)
 	icon:GetPropertyChangedSignal('Visible'):Connect(updateThisTopBar)
 
-	local dragController = DragController.new(instance, topBar.DragHandle)
+	local dragController = DragController.new(base, topBar.DragHandle)
 	dragController.Enabled = options.Draggable
-	dragController.DragChanged:Connect(function(newPos)
-		self.OriginalPosition = newPos
+	dragController._dragChanged:Connect(function(newPos)
+		self._originalPosition = newPos
 	end)
 	self.DragController = dragController
 
-	local resizeController = ResizeController.new(instance)
+	local resizeController = ResizeController.new(base)
 	resizeController.Enabled = options.Resizable
 	resizeController.ResizeMin = Vector2.new()
-	resizeController.ResizeChanged:Connect(function(newPos, newSize)
-		self.OriginalPosition = newPos
-		self.OriginalSize = newSize
+	resizeController._resizeChanged:Connect(function(newPos, newSize)
+		self._originalPosition = newPos
+		self._originalSize = newSize
 	end)
 	self.ResizeController = resizeController
 
-	self.Content = Container.fromGuiObject(instance.Content)
+	self.Content = Container.fromGuiObject(base.Content)
 
-	self.Instance.Parent = Registry.GetRootScreenGui()
+	self.Base.Parent = Registry.GetRootScreenGui()
 
 	updateThisTopBar()
 
@@ -373,13 +369,13 @@ end
 
 function Window.SetTitle(self: Window, title: string)
 	self.Title = title
-	self.Instance.TopBar.Title.Text = title
+	self.Base.TopBar.Title.Text = title
 end
 
 function Window.SetIcon(self: Window, icon: Icon.Icon?)
 	self.Icon = icon
 
-	local topBarIcon = self.Instance.TopBar.Icon
+	local topBarIcon = self.Base.TopBar.Icon
 	if icon then
 		icon:ApplyTo(topBarIcon)
 		topBarIcon.Visible = true
@@ -392,20 +388,20 @@ end
 
 function Window.SetSize(self: Window, size: UDim2)
 	self.Size = size
-	self.OriginalSize = size
+	self._originalSize = size
 
-	self.Instance.Size = size
+	self.Base.Size = size
 end
 
 function Window.SetPosition(self: Window, position: UDim2)
 	self.Position = position
-	self.OriginalPosition = position
+	self._originalPosition = position
 
-	self.Instance.Position = position
+	self.Base.Position = position
 end
 
 function Window.Center(self: Window)
-	self:SetPosition(GuiUtils.GetCenterPosition(self.Instance))
+	self:SetPosition(GuiUtils.GetCenterPosition(self.Base))
 end
 
 function Window.CreateTopBarButton(
@@ -415,7 +411,7 @@ function Window.CreateTopBarButton(
 	callback: () -> ()
 ): IconButton.IconButton
 	local button = IconButton.new(icon, callback)
-	button.Instance.Parent = self.Instance.TopBar.Buttons
+	button.Base.Parent = self.Base.TopBar.Buttons
 
 	self.TopBarButtons[name] = button
 
@@ -423,8 +419,8 @@ function Window.CreateTopBarButton(
 end
 
 function Window.Show(self: Window)
-	local instance = self.Instance
-	instance.Visible = true
+	local base = self.Base
+	base.Visible = true
 
 	local transitionGroups = self.TransitionGroups
 
@@ -435,7 +431,7 @@ function Window.Show(self: Window)
 end
 
 function Window.Hide(self: Window)
-	local instance = self.Instance
+	local base = self.Base
 
 	local transitionGroups = self.TransitionGroups
 	local hideTransition = transitionGroups.Hide
@@ -444,7 +440,7 @@ function Window.Hide(self: Window)
 	hideTransition:ReplayAll()
 
 	hideTransition.Transitions.Window.Completed:Once(function()
-		instance.Visible = false
+		base.Visible = false
 	end)
 
 	self.Hidden = true
@@ -474,11 +470,11 @@ function Window.SetParent(self: Window, parent: Instance)
 		makeModal(self, true)
 	end
 
-	self.Instance.Parent = parent
+	self.Base.Parent = parent
 end
 
 function Window.GetContent(self: Window): GuiObject
-	return self.Content.Instance
+	return self.Content.Base
 end
 
 function Window.Destroy(self: Window)
@@ -487,7 +483,7 @@ function Window.Destroy(self: Window)
 	end
 
 	self.Content:Destroy()
-	self.Instance:Destroy()
+	self.Base:Destroy()
 end
 
 return Window

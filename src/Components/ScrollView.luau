@@ -7,7 +7,7 @@ local GuiInputService = require(script.Parent.Parent.Services.GuiInputService)
 local TransitionService = require(script.Parent.Parent.Services.TransitionService)
 local TransitionGroup = require(script.Parent.Parent.Services.TransitionService.TransitionGroup)
 
-type instance = Frame & {
+type base = Frame & {
 	View: ScrollingFrame,
 	VerticalScrollBar: Frame & {
 		Track: Frame,
@@ -20,8 +20,7 @@ type instance = Frame & {
 }
 
 type ScrollViewProps = {
-	Instance: instance,
-	Connections: { RBXScriptConnection },
+	Base: base,
 	ScrollingDirection: Enum.ScrollingDirection,
 	ScrollingEnabled: boolean,
 	ScrollBarThickness: number,
@@ -31,6 +30,7 @@ type ScrollViewProps = {
 		ShowHScrollBar: TransitionGroup.TransitionGroup,
 		HideHScrollBar: TransitionGroup.TransitionGroup,
 	},
+	_connections: { RBXScriptConnection },
 	_verticalHideThread: thread?,
 	_horizontalHideThread: thread?,
 }
@@ -159,9 +159,9 @@ local BaseBlueprint = Blueprint.new({
 })
 
 local function updateVerticalScrollBar(self: ScrollView)
-	local instance = self.Instance
-	local view = instance.View
-	local scrollBar = instance.VerticalScrollBar
+	local base = self.Base
+	local view = base.View
+	local scrollBar = base.VerticalScrollBar
 	local scrollBarThumb = scrollBar.Thumb
 
 	local canvasSizeY = view.AbsoluteCanvasSize.Y
@@ -178,9 +178,9 @@ local function updateVerticalScrollBar(self: ScrollView)
 end
 
 local function updateHorizontalScrollBar(self: ScrollView)
-	local instance = self.Instance
-	local view = instance.View
-	local scrollBar = instance.HorizontalScrollBar
+	local base = self.Base
+	local view = base.View
+	local scrollBar = base.HorizontalScrollBar
 	local scrollBarThumb = scrollBar.Thumb
 
 	local canvasSizeX = view.AbsoluteCanvasSize.X
@@ -208,17 +208,17 @@ function ScrollView.new(options: ScrollViewOptions?): ScrollView
 
 	local self: ScrollView = setmetatable({}, ScrollView)
 
-	local instance = BaseBlueprint:Build() :: instance
-	local view = instance.View
-	local vScrollBar = instance.VerticalScrollBar
+	local base = BaseBlueprint:Build() :: base
+	local view = base.View
+	local vScrollBar = base.VerticalScrollBar
 	local vScrollBarTrack = vScrollBar.Track
 	local vScrollBarThumb = vScrollBar.Thumb
-	local hScrollBar = instance.HorizontalScrollBar
+	local hScrollBar = base.HorizontalScrollBar
 	local hScrollBarTrack = hScrollBar.Track
 	local hScrollBarThumb = hScrollBar.Thumb
 
-	self.Instance = instance
-	self.Connections = {}
+	self.Base = base
+	self._connections = {}
 
 	self:SetScrollingDirection(options.ScrollingDirection)
 	self:SetScrollingEnabled(options.ScrollingEnabled)
@@ -514,7 +514,7 @@ function ScrollView.new(options: ScrollViewOptions?): ScrollView
 		end
 	end)
 
-	self.Connections[1] = UserInputService.InputChanged:Connect(function(input)
+	self._connections[1] = UserInputService.InputChanged:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
 			if dragDirection == 'Y' then
 				updateVScrollBarInput(input.Position)
@@ -531,19 +531,19 @@ end
 
 function ScrollView.SetScrollingDirection(self: ScrollView, direction: Enum.ScrollingDirection)
 	self.ScrollingDirection = direction
-	self.Instance.View.ScrollingDirection = direction
+	self.Base.View.ScrollingDirection = direction
 end
 
 function ScrollView.SetScrollingEnabled(self: ScrollView, enabled: boolean)
 	self.ScrollingEnabled = enabled
-	self.Instance.View.ScrollingEnabled = enabled
+	self.Base.View.ScrollingEnabled = enabled
 end
 
 function ScrollView.SetScrollBarThickness(self: ScrollView, thickness: number)
 	self.ScrollBarThickness = thickness
 
-	local vScrollBar = self.Instance.VerticalScrollBar
-	local hScrollBar = self.Instance.HorizontalScrollBar
+	local vScrollBar = self.Base.VerticalScrollBar
+	local hScrollBar = self.Base.HorizontalScrollBar
 
 	vScrollBar.Position = UDim2.new(1, -thickness - 5, 0, 10)
 	vScrollBar.Size = UDim2.new(0, thickness, 1, -20)
@@ -552,21 +552,21 @@ function ScrollView.SetScrollBarThickness(self: ScrollView, thickness: number)
 end
 
 function ScrollView.SetCanvasSize(self: ScrollView, size: UDim2)
-	self.Instance.View.CanvasSize = size
+	self.Base.View.CanvasSize = size
 end
 
 function ScrollView.SetCanvasPosition(self: ScrollView, position: Vector2)
-	self.Instance.View.CanvasPosition = position
+	self.Base.View.CanvasPosition = position
 end
 
 function ScrollView.SetParent(self: ScrollView, parent: Instance)
-	self.Instance.Parent = parent
+	self.Base.Parent = parent
 end
 
 function ScrollView.Destroy(self: ScrollView)
-	local instance = self.Instance
+	local base = self.Base
 
-	for _, connection in self.Connections do
+	for _, connection in self._connections do
 		connection:Disconnect()
 	end
 	if self._verticalHideThread then
@@ -576,7 +576,7 @@ function ScrollView.Destroy(self: ScrollView)
 		task.cancel(self._horizontalHideThread)
 	end
 
-	instance:Destroy()
+	base:Destroy()
 end
 
 return ScrollView

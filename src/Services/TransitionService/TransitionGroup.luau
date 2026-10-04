@@ -27,14 +27,14 @@ function TransitionGroup:__tostring()
 	return TransitionGroup.ClassName
 end
 
-function TransitionGroup.new(instances: { [string]: Instance }, preset: Preset): TransitionGroup
+function TransitionGroup.new(targets: { [string]: Instance }, preset: Preset): TransitionGroup
 	local self: TransitionGroup = setmetatable({}, TransitionGroup)
 
 	self.Transitions = {}
 
 	local _base = preset._base or {}
 
-	for id, instance in instances do
+	for id, target in targets do
 		local transitionPreset = preset[id]
 
 		assert(transitionPreset, `missing preset for "{id}"`)
@@ -45,7 +45,7 @@ function TransitionGroup.new(instances: { [string]: Instance }, preset: Preset):
 			end
 		end
 
-		local transition = Transition.new(instance, transitionPreset)
+		local transition = Transition.new(target, transitionPreset)
 		self.Transitions[id] = transition
 		transition.Destroying:Once(function()
 			self.Transitions[id] = nil

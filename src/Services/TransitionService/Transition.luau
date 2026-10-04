@@ -4,12 +4,12 @@ local TweenService = game:GetService('TweenService')
 local Preferences = require(script.Parent.Parent.Parent.Registry.Preferences)
 
 type TransitionProps = {
-	Adornee: Instance?,
-	TweenInfo: TweenInfo,
-	PropertyTable: PropertyTable,
+	Target: Instance?,
 	Completed: Signal.Signal<Enum.PlaybackState>,
 	PlaybackState: Enum.PlaybackState,
 	Destroying: Signal.Signal<>,
+	_tweenInfo: TweenInfo,
+	_propertyTable: PropertyTable,
 	_tween: Tween?,
 	_completedConnection: RBXScriptConnection?,
 }
@@ -42,7 +42,7 @@ local function getPropertyTable(propertyTable: PropertyTable)
 end
 
 local function initTween(self: Transition): Tween
-	local tween = TweenService:Create(self.Adornee, self.TweenInfo, getPropertyTable(self.PropertyTable))
+	local tween = TweenService:Create(self.Target, self._tweenInfo, getPropertyTable(self._propertyTable))
 
 	self._tween = tween
 	self.PlaybackState = Enum.PlaybackState.Begin
@@ -55,7 +55,7 @@ local function initTween(self: Transition): Tween
 	return tween
 end
 
-function Transition.new(adornee: Instance, preset: Preset): Transition
+function Transition.new(target: Instance, preset: Preset): Transition
 	local self: Transition = setmetatable({}, Transition)
 
 	local tweenInfo = TweenInfo.new(
@@ -67,14 +67,14 @@ function Transition.new(adornee: Instance, preset: Preset): Transition
 		preset.DelayTime or 0
 	)
 
-	self.Adornee = adornee
-	self.TweenInfo = tweenInfo
-	self.PropertyTable = preset.PropertyTable
+	self.Target = target
+	self._tweenInfo = tweenInfo
+	self._propertyTable = preset.PropertyTable
 	self.Completed = Signal.new()
 	self.PlaybackState = Enum.PlaybackState.Begin
 	self.Destroying = Signal.new()
 
-	adornee.Destroying:Once(function()
+	target.Destroying:Once(function()
 		self:Destroy()
 	end)
 
@@ -82,7 +82,7 @@ function Transition.new(adornee: Instance, preset: Preset): Transition
 end
 
 function Transition.Play(self: Transition)
-	if not self.Adornee then
+	if not self.Target then
 		return
 	end
 
@@ -138,15 +138,15 @@ function Transition.Cancel(self: Transition)
 end
 
 function Transition.Apply(self: Transition)
-	local instance = self.Adornee
-	if not instance then
+	local target = self.Target
+	if not target then
 		return
 	end
 
 	self:Cancel()
 
-	for property, value in getPropertyTable(self.PropertyTable) do
-		instance[property] = value
+	for property, value in getPropertyTable(self._propertyTable) do
+		target[property] = value
 	end
 
 	self.PlaybackState = Enum.PlaybackState.Completed
@@ -155,7 +155,7 @@ end
 
 function Transition.Destroy(self: Transition)
 	Transition:Cancel()
-	self.Adornee = nil
+	self.Target = nil
 	self.Destroying:FireSync()
 end
 

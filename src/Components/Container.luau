@@ -1,7 +1,7 @@
 local BaseLayout = require(script.Parent.Parent.Types.BaseLayout)
 
 type ContainerProps = {
-	Instance: GuiObject,
+	Base: GuiObject,
 	Layout: BaseLayout.BaseLayout?,
 }
 
@@ -19,7 +19,7 @@ end
 function Container.new(): Container
 	local self: Container = setmetatable({}, Container)
 
-	self.Instance = Instance.new('Frame')
+	self.Base = Instance.new('Frame')
 
 	return self
 end
@@ -27,22 +27,22 @@ end
 function Container.fromGuiObject(object: GuiObject): Container
 	local self = setmetatable({}, Container)
 
-	self.Instance = object
+	self.Base = object
 
 	return self
 end
 
 function Container.SetLayout(self: Container, layout: BaseLayout.BaseLayout)
 	if self.Layout then
-		self.Layout:SetAdornee(nil)
+		self.Layout:SetTarget(nil)
 	end
 
-	layout:SetAdornee(self.Instance)
+	layout:SetTarget(self.Base)
 	self.Layout = layout
 end
 
 function Container.SetParent(self: Container, parent: Instance)
-	self.Instance.Parent = parent
+	self.Base.Parent = parent
 end
 
 function Container.Destroy(self: Container)
@@ -50,7 +50,7 @@ function Container.Destroy(self: Container)
 		self.Layout:Destroy()
 	end
 
-	self.Instance:Destroy()
+	self.Base:Destroy()
 end
 
 return Container

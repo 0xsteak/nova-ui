@@ -1,7 +1,7 @@
 type PageLayoutProps = {
-	Adornee: GuiObject?,
-	Instance: UIPageLayout,
-	AdorneeConnection: RBXScriptConnection?,
+	Target: GuiObject?,
+	Base: UIPageLayout,
+	_targetConnection: RBXScriptConnection?,
 }
 
 local PageLayout = {}
@@ -15,51 +15,51 @@ function PageLayout.__tostring(self: PageLayout)
 	return PageLayout.ClassName
 end
 
-function PageLayout.new(adornee: GuiObject?): PageLayout
+function PageLayout.new(target: GuiObject?): PageLayout
 	local self: PageLayout = setmetatable({}, PageLayout)
 
-	self.Instance = Instance.new('UIPageLayout')
+	self.Base = Instance.new('UIPageLayout')
 
-	self:SetAdornee(adornee)
+	self:SetTarget(target)
 
 	return self
 end
 
-function PageLayout.SetAdornee(self: PageLayout, adornee: GuiObject?)
-	if self.AdorneeConnection then
-		self.AdorneeConnection:Disconnect()
+function PageLayout.SetTarget(self: PageLayout, target: GuiObject?)
+	if self._targetConnection then
+		self._targetConnection:Disconnect()
 	end
 
-	self.Adornee = adornee
-	self.Instance.Parent = adornee
+	self.Target = target
+	self.Base.Parent = target
 
-	if adornee then
-		self.AdorneeConnection = adornee.Destroying:Once(function()
+	if target then
+		self._targetConnection = target.Destroying:Once(function()
 			self:Destroy()
 		end)
 	end
 end
 
 function PageLayout.JumpTo(self: PageLayout, page: Instance)
-	self.Instance:JumpTo(page)
+	self.Base:JumpTo(page)
 end
 
 function PageLayout.JumpToIndex(self: PageLayout, index: number)
-	self.Instance:JumpToIndex(index)
+	self.Base:JumpToIndex(index)
 end
 
 function PageLayout.Next(self: PageLayout)
-	self.Instance:Next()
+	self.Base:Next()
 end
 
 function PageLayout.Previous(self: PageLayout)
-	self.Instance:Previous()
+	self.Base:Previous()
 end
 
 function PageLayout.Destroy(self: PageLayout)
-	self.Instance:Destroy()
-	if self.AdorneeConnection then
-		self.AdorneeConnection:Disconnect()
+	self.Base:Destroy()
+	if self._targetConnection then
+		self._targetConnection:Disconnect()
 	end
 end
 

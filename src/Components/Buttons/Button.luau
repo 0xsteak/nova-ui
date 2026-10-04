@@ -2,7 +2,7 @@ local Blueprint = require(script.Parent.Parent.Parent.Classes.Blueprint)
 local GuiInputService = require(script.Parent.Parent.Parent.Services.GuiInputService)
 
 type ButtonProps = {
-	Instance: ImageButton,
+	Base: ImageButton,
 	Callback: () -> (),
 	Enabled: boolean,
 }
@@ -28,16 +28,16 @@ end
 function Button.new(callback: (() -> ())?): Button
 	local self: Button = setmetatable({}, Button)
 
-	local instance = BaseBlueprint:Build()
+	local base = BaseBlueprint:Build()
 
-	self.Instance = instance
+	self.Base = base
 	self.Callback = callback or function() end
 	self.Enabled = true
 
-	GuiInputService.Register(instance, {
+	GuiInputService.Register(base, {
 		RequireOnTop = true,
 	})
-	local mb1Click = GuiInputService.AddEvent(instance, 'MouseButton1Click')
+	local mb1Click = GuiInputService.AddEvent(base, 'MouseButton1Click')
 
 	mb1Click:Connect(function()
 		if self.Enabled then
@@ -50,28 +50,28 @@ end
 
 function Button.Disable(self: Button)
 	self.Enabled = false
-	self.Instance.Interactable = false
+	self.Base.Interactable = false
 end
 
 function Button.Enable(self: Button)
 	self.Enabled = true
-	self.Instance.Interactable = true
+	self.Base.Interactable = true
 end
 
 function Button.SetSize(self: Button, size: UDim2)
-	self.Instance.Size = size
+	self.Base.Size = size
 end
 
 function Button.SetPosition(self: Button, position: UDim2)
-	self.Instance.Position = position
+	self.Base.Position = position
 end
 
 function Button.SetParent(self: Button, parent: Instance)
-	self.Instance.Parent = parent
+	self.Base.Parent = parent
 end
 
 function Button.Destroy(self: Button)
-	self.Instance:Destroy()
+	self.Base:Destroy()
 end
 
 return Button

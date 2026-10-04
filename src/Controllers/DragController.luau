@@ -2,14 +2,14 @@ local Signal = require(script.Parent.Parent.Packages.Signal)
 local UserInputService = game:GetService('UserInputService')
 
 type DragControllerProps = {
-	Adornee: GuiObject,
+	Target: GuiObject,
 	DragHandle: GuiObject,
 	Enabled: boolean,
 	Locked: boolean,
 	IsDragging: boolean,
-	DragOffset: Vector2,
-	DragChanged: Signal.Signal<UDim2>,
-	Connections: { RBXScriptConnection },
+	_dragOffset: Vector2,
+	_dragChanged: Signal.Signal<UDim2>,
+	_connections: { RBXScriptConnection },
 }
 
 local DragController = {}
@@ -31,15 +31,15 @@ local changedInputType = if UserInputService.TouchEnabled
 	then Enum.UserInputType.Touch
 	else Enum.UserInputType.MouseMovement
 
-function DragController.new(adornee: GuiObject, dragHandle: GuiObject): DragController
+function DragController.new(target: GuiObject, dragHandle: GuiObject): DragController
 	local self: DragController = setmetatable({}, DragController)
 
-	self.Adornee = adornee
+	self.Target = target
 	self.DragHandle = dragHandle
 	self.Enabled = true
 	self.Locked = false
 	self.IsDragging = false
-	self.DragChanged = Signal.new()
+	self._dragChanged = Signal.new()
 
 	local connections: { RBXScriptConnection } = {}
 
@@ -49,9 +49,9 @@ function DragController.new(adornee: GuiObject, dragHandle: GuiObject): DragCont
 				return
 			end
 
-			self.DragOffset = Vector2.new(
-				adornee.AbsolutePosition.X - input.Position.X + adornee.AbsoluteSize.X * adornee.AnchorPoint.X,
-				adornee.AbsolutePosition.Y - input.Position.Y + adornee.AbsoluteSize.Y * adornee.AnchorPoint.Y
+			self._dragOffset = Vector2.new(
+				target.AbsolutePosition.X - input.Position.X + target.AbsoluteSize.X * target.AnchorPoint.X,
+				target.AbsolutePosition.Y - input.Position.Y + target.AbsoluteSize.Y * target.AnchorPoint.Y
 			)
 
 			self.IsDragging = true
@@ -68,11 +68,11 @@ function DragController.new(adornee: GuiObject, dragHandle: GuiObject): DragCont
 		end
 	end)
 
-	connections[2] = adornee.Destroying:Once(function()
+	connections[2] = target.Destroying:Once(function()
 		self:Destroy()
 	end)
 
-	self.Connections = connections
+	self._connections = connections
 
 	table.insert(Controllers, 1, self)
 
@@ -80,7 +80,7 @@ function DragController.new(adornee: GuiObject, dragHandle: GuiObject): DragCont
 end
 
 function DragController.Destroy(self: DragController)
-	for _, connection in self.Connections do
+	for _, connection in self._connections do
 		connection:Disconnect()
 	end
 
@@ -100,11 +100,11 @@ UserInputService.InputChanged:Connect(function(input)
 			continue
 		end
 
-		local dragOffset = controller.DragOffset
+		local dragOffset = controller._dragOffset
 		local newPos = UDim2.fromOffset(input.Position.X + dragOffset.X, input.Position.Y + dragOffset.Y)
 
-		controller.Adornee.Position = newPos
-		controller.DragChanged:Fire(newPos)
+		controller.Target.Position = newPos
+		controller._dragChanged:Fire(newPos)
 
 		return
 	end

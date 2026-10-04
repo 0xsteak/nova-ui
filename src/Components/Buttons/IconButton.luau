@@ -9,7 +9,7 @@ local TransitionGroup = require(script.Parent.Parent.Parent.Services.TransitionS
 
 type IconButtonProps = {
 	ClassName: 'NovaUI.IconButton',
-	Instance: instance,
+	Base: base,
 	Button: Button.Button,
 	TransitionGroups: {
 		Idle: TransitionGroup.TransitionGroup,
@@ -19,7 +19,7 @@ type IconButtonProps = {
 	State: State,
 }
 
-type instance = ImageButton & {
+type base = ImageButton & {
 	UICorner: UICorner,
 	Icon: ImageLabel,
 }
@@ -132,7 +132,7 @@ local function setState(self: IconButton, newState: State)
 	elseif newState == 'MouseDown' then
 		mouseDownTransition:ReplayAll()
 	elseif newState == 'Disabled' then
-		self.Instance.Icon.ImageTransparency = 0.5
+		self.Base.Icon.ImageTransparency = 0.5
 	end
 end
 
@@ -142,32 +142,28 @@ function IconButton.new(icon: Icon.Icon, callback: (() -> ())?, buttonSize: UDim
 
 	local button = Button.new(callback)
 	self.Button = button
-	self.Instance = button.Instance
+	self.Base = button.Base
 
 	local folder = BaseBlueprint:Build()
-	local instance = button.Instance :: instance
+	local base = button.Base :: base
 
 	for _, child in folder:GetChildren() do
-		child.Parent = instance
+		child.Parent = base
 	end
 	folder:Destroy()
 
-	local buttonIcon = instance.Icon
+	local buttonIcon = base.Icon
 
-	instance.Size = buttonSize or UDim2.new(0, 25, 0, 25)
+	base.Size = buttonSize or UDim2.new(0, 25, 0, 25)
 	buttonIcon.Size = iconSize or UDim2.new(0, 16, 0, 16)
 
-	local idleTransition = TransitionService.CreateGroup(
-		{ Button = instance, Icon = buttonIcon },
-		IdlePreset,
-		{ 'Theme' }
-	)
+	local idleTransition = TransitionService.CreateGroup({ Button = base, Icon = buttonIcon }, IdlePreset, { 'Theme' })
 	local hoverTransition = TransitionService.CreateGroup(
-		{ Button = instance, Icon = buttonIcon },
+		{ Button = base, Icon = buttonIcon },
 		HoverPreset,
 		{ 'Theme' }
 	)
-	local mouseDownTransition = TransitionService.CreateGroup({ Button = instance }, MouseDownPreset, { 'Theme' })
+	local mouseDownTransition = TransitionService.CreateGroup({ Button = base }, MouseDownPreset, { 'Theme' })
 
 	self.TransitionGroups = {
 		Idle = idleTransition,
@@ -177,16 +173,16 @@ function IconButton.new(icon: Icon.Icon, callback: (() -> ())?, buttonSize: UDim
 
 	icon:ApplyTo(buttonIcon)
 
-	GuiInputService.SetOptions(instance, {
+	GuiInputService.SetOptions(base, {
 		RequireOnTop = {
 			IgnoreDescendants = true,
 		},
 	})
-	local inputBegan = GuiInputService.AddEvent(instance, 'InputBegan')
-	local mouseEnter = GuiInputService.AddEvent(instance, 'MouseEnter')
-	local mouseLeave = GuiInputService.AddEvent(instance, 'MouseLeave')
+	local inputBegan = GuiInputService.AddEvent(base, 'InputBegan')
+	local mouseEnter = GuiInputService.AddEvent(base, 'MouseEnter')
+	local mouseLeave = GuiInputService.AddEvent(base, 'MouseLeave')
 
-	ThemeService.Bind(instance, 'Foreground', 'BackgroundColor3')
+	ThemeService.Bind(base, 'Foreground', 'BackgroundColor3')
 	ThemeService.Bind(buttonIcon, 'Foreground', 'ImageColor3')
 
 	ThemeService.Update()
@@ -237,9 +233,9 @@ function IconButton.new(icon: Icon.Icon, callback: (() -> ())?, buttonSize: UDim
 	mouseEnter:Connect(onMouseEnter)
 	mouseLeave:Connect(onMouseLeave)
 
-	instance.Visible = true
+	base.Visible = true
 
-	self.Instance = instance
+	self.Base = base
 
 	return self
 end
@@ -252,14 +248,14 @@ end
 function IconButton.Enable(self: IconButton)
 	self.Enabled = true
 
-	local instance = self.Instance
+	local base = self.Base
 
-	instance.GroupTransparency = 0
-	instance.Interactable = true
+	base.GroupTransparency = 0
+	base.Interactable = true
 end
 
 function IconButton.SetParent(self: IconButton, parent: Instance)
-	self.Instance.Parent = parent
+	self.Base.Parent = parent
 end
 
 function IconButton.Destroy(self: IconButton)

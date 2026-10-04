@@ -1,7 +1,7 @@
 type GridLayoutProps = {
-	Adornee: GuiObject?,
-	Instance: UIGridLayout,
-	AdorneeConnection: RBXScriptConnection,
+	Target: GuiObject?,
+	Base: UIGridLayout,
+	_targetConnection: RBXScriptConnection,
 }
 
 local GridLayout = {}
@@ -18,30 +18,30 @@ end
 function GridLayout.new(): GridLayout
 	local self: GridLayout = setmetatable({}, GridLayout)
 
-	self.Instance = Instance.new('UIGridLayout')
+	self.Base = Instance.new('UIGridLayout')
 
 	return self
 end
 
-function GridLayout.SetAdornee(self: GridLayout, adornee: GuiObject?)
-	if self.AdorneeConnection then
-		self.AdorneeConnection:Disconnect()
+function GridLayout.SetTarget(self: GridLayout, target: GuiObject?)
+	if self._targetConnection then
+		self._targetConnection:Disconnect()
 	end
 
-	self.Adornee = adornee
-	self.Instance.Parent = adornee
+	self.Target = target
+	self.Base.Parent = target
 
-	if adornee then
-		self.AdorneeConnection = adornee.Destroying:Once(function()
+	if target then
+		self._targetConnection = target.Destroying:Once(function()
 			self:Destroy()
 		end)
 	end
 end
 
 function GridLayout.Destroy(self: GridLayout)
-	self.Instance:Destroy()
-	if self.AdorneeConnection then
-		self.AdorneeConnection:Disconnect()
+	self.Base:Destroy()
+	if self._targetConnection then
+		self._targetConnection:Disconnect()
 	end
 end
 

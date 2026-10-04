@@ -5,12 +5,8 @@ local TransitionService = {}
 
 local TagCollection: { [string]: { [Transition.Transition]: true } } = {}
 
-function TransitionService.Create(
-	instance: Instance,
-	preset: Transition.Preset,
-	tags: { string }?
-): Transition.Transition
-	local transition = Transition.new(instance, preset)
+function TransitionService.Create(target: Instance, preset: Transition.Preset, tags: { string }?): Transition.Transition
+	local transition = Transition.new(target, preset)
 
 	for _, tag in tags or {} do
 		TransitionService.AddTag(transition, tag)
@@ -20,11 +16,11 @@ function TransitionService.Create(
 end
 
 function TransitionService.CreateGroup(
-	instances: { [string]: Instance },
+	targets: { [string]: Instance },
 	preset: TransitionGroup.Preset,
 	tags: { string }?
 ): TransitionGroup.TransitionGroup
-	local transitionGroup = TransitionGroup.new(instances, preset)
+	local transitionGroup = TransitionGroup.new(targets, preset)
 
 	for _, tag in tags or {} do
 		for _, transition in transitionGroup.Transitions do

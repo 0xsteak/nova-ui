@@ -1,7 +1,7 @@
 type ListLayoutProps = {
-	Adornee: GuiObject?,
-	Instance: UIListLayout,
-	AdorneeConnection: RBXScriptConnection?,
+	Target: GuiObject?,
+	Base: UIListLayout,
+	_targetConnection: RBXScriptConnection?,
 }
 
 local ListLayout = {}
@@ -15,35 +15,35 @@ function ListLayout.__tostring(self: ListLayout)
 	return ListLayout.ClassName
 end
 
-function ListLayout.new(adornee: GuiObject?): ListLayout
+function ListLayout.new(target: GuiObject?): ListLayout
 	local self: ListLayout = setmetatable({}, ListLayout)
 
-	self.Instance = Instance.new('UIListLayout')
+	self.Base = Instance.new('UIListLayout')
 
-	self:SetAdornee(adornee)
+	self:SetTarget(target)
 
 	return self
 end
 
-function ListLayout.SetAdornee(self: ListLayout, adornee: GuiObject?)
-	if self.AdorneeConnection then
-		self.AdorneeConnection:Disconnect()
+function ListLayout.SetTarget(self: ListLayout, target: GuiObject?)
+	if self._targetConnection then
+		self._targetConnection:Disconnect()
 	end
 
-	self.Adornee = adornee
-	self.Instance.Parent = adornee
+	self.Target = target
+	self.Base.Parent = target
 
-	if adornee then
-		self.AdorneeConnection = adornee.Destroying:Once(function()
+	if target then
+		self._targetConnection = target.Destroying:Once(function()
 			self:Destroy()
 		end)
 	end
 end
 
 function ListLayout.Destroy(self: ListLayout)
-	self.Instance:Destroy()
-	if self.AdorneeConnection then
-		self.AdorneeConnection:Disconnect()
+	self.Base:Destroy()
+	if self._targetConnection then
+		self._targetConnection:Disconnect()
 	end
 end
 
