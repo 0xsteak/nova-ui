@@ -24,6 +24,7 @@ sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
 
 [dependencies]
 Signal = { wally = "molyidev/signal", version = "^1.0.3" }
+Promise = { wally = "evaera/promise", version = "^4.0.0" }
 
 [dev_dependencies]
 scripts = { name = "pesde/scripts_rojo", version = "^0.2.0", target = "lune" }

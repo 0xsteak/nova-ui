@@ -9,9 +9,7 @@ local DragController = require(script.Parent.Parent.Controllers.DragController)
 local ResizeController = require(script.Parent.Parent.Controllers.ResizeController)
 local Container = require(script.Parent.Container)
 local Preferences = require(script.Parent.Parent.Registry.Preferences)
-local TransitionService = require(script.Parent.Parent.Services.TransitionService)
 local Transition = require(script.Parent.Parent.Services.TransitionService.Transition)
-local TransitionGroup = require(script.Parent.Parent.Services.TransitionService.TransitionGroup)
 
 type base = CanvasGroup & {
 	TopBar: Frame & {
@@ -40,12 +38,10 @@ type WindowProps = {
 	ResizeMinAuto: boolean,
 	Content: Container.Container,
 	Transitions: {
+		Show: Transition.Transition,
+		Hide: Transition.Transition,
 		Maximize: Transition.Transition,
 		Restore: Transition.Transition,
-	},
-	TransitionGroups: {
-		Show: TransitionGroup.TransitionGroup,
-		Hide: TransitionGroup.TransitionGroup,
 	},
 	Hidden: boolean,
 	_originalSize: UDim2,
@@ -72,52 +68,7 @@ function Window.__tostring(self: Window)
 	return Window.ClassName
 end
 
-local _basePreset = {
-	Time = 0.25,
-	EasingStyle = Enum.EasingStyle.Cubic,
-	EasingDirection = Enum.EasingDirection.Out,
-}
-local ShowPreset: TransitionGroup.Preset = {
-	_base = _basePreset,
-	Window = {
-		PropertyTable = {
-			GroupTransparency = 0,
-		} :: Transition.PropertyTable<CanvasGroup>,
-	},
-	UIScale = {
-		PropertyTable = {
-			Scale = 1,
-		} :: Transition.PropertyTable<UIScale>,
-	},
-	UIShadow = {
-		PropertyTable = {
-			Transparency = 0.5,
-		},
-	},
-}
-local HidePreset: TransitionGroup.Preset = {
-	_base = _basePreset,
-	Window = {
-		PropertyTable = {
-			GroupTransparency = 1,
-		} :: Transition.PropertyTable<CanvasGroup>,
-	},
-	UIScale = {
-		PropertyTable = {
-			Scale = 0.85,
-		} :: Transition.PropertyTable<UIScale>,
-	},
-	UIShadow = {
-		PropertyTable = {
-			Transparency = 1,
-		},
-	},
-}
-local MaximizePreset: Transition.Preset = table.clone(_basePreset)
-MaximizePreset.PropertyTable = {
-	Position = UDim2.new(0.5, 0, 0.5, 0),
-	Size = UDim2.new(1, 0, 1, 0),
-} :: Transition.PropertyTable<CanvasGroup>
+local TWEEN_INFO = TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
 
 local BaseBlueprint = Blueprint.new({
 	ClassName = 'CanvasGroup',
@@ -206,10 +157,10 @@ local function maximizeToggle(self: Window, restore: boolean?)
 
 	if restore then
 		transitions.Maximize:Cancel()
-		transitions.Restore:Replay()
+		transitions.Restore:Play()
 	else
 		transitions.Restore:Cancel()
-		transitions.Maximize:Replay()
+		transitions.Maximize:Play()
 	end
 
 	self.DragController.Locked = if restore then false else true
@@ -291,29 +242,43 @@ function Window.new(options: WindowOptions?): Window
 	self.Base = base
 	self.TopBarButtons = {}
 	self.Hidden = false
-
-	local restorePreset: Transition.Preset = table.clone(_basePreset)
-	restorePreset.PropertyTable = function()
-		return {
-			Position = self._originalPosition,
-			Size = self._originalSize,
-		} :: Transition.PropertyTable<CanvasGroup>
-	end
-
-	local showTransition =
-		TransitionService.CreateGroup({ Window = base, UIScale = base.UIScale, UIShadow = base.UIShadow }, ShowPreset)
-	local hideTransition =
-		TransitionService.CreateGroup({ Window = base, UIScale = base.UIScale, UIShadow = base.UIShadow }, HidePreset)
-	local maximizeTransition = TransitionService.Create(base, MaximizePreset)
-	local restoreTransition = TransitionService.Create(base, restorePreset)
-
-	self.TransitionGroups = {
-		Show = showTransition,
-		Hide = hideTransition,
-	}
 	self.Transitions = {
-		Maximize = maximizeTransition,
-		Restore = restoreTransition,
+		Show = Transition.new({
+			[base] = {
+				GroupTransparency = 0,
+			},
+			[base.UIScale] = {
+				Scale = 1,
+			},
+			[base.UIShadow] = {
+				Transparency = 0.5,
+			},
+		}, TWEEN_INFO),
+		Hide = Transition.new({
+			[base] = {
+				GroupTransparency = 1,
+			},
+			[base.UIScale] = {
+				Scale = 0.85,
+			},
+			[base.UIShadow] = {
+				Transparency = 1,
+			},
+		}, TWEEN_INFO),
+		Maximize = Transition.new({
+			[base] = {
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Size = UDim2.new(1, 0, 1, 0),
+			},
+		}, TWEEN_INFO),
+		Restore = Transition.new({
+			[base] = function()
+				return {
+					Position = self._originalPosition,
+					Size = self._originalSize,
+				}
+			end,
+		}, TWEEN_INFO),
 	}
 
 	ThemeService.Bind(base, 'Background', 'BackgroundColor3')
@@ -422,10 +387,8 @@ function Window.Show(self: Window)
 	local base = self.Base
 	base.Visible = true
 
-	local transitionGroups = self.TransitionGroups
-
-	transitionGroups.Hide:CancelAll()
-	transitionGroups.Show:ReplayAll()
+	self.Transitions.Hide:Cancel()
+	self.Transitions.Show:Play()
 
 	self.Hidden = false
 end
@@ -433,13 +396,8 @@ end
 function Window.Hide(self: Window)
 	local base = self.Base
 
-	local transitionGroups = self.TransitionGroups
-	local hideTransition = transitionGroups.Hide
-
-	transitionGroups.Show:CancelAll()
-	hideTransition:ReplayAll()
-
-	hideTransition.Transitions.Window.Completed:Once(function()
+	self.Transitions.Show:Cancel()
+	self.Transitions.Hide:Play():andThen(function()
 		base.Visible = false
 	end)
 

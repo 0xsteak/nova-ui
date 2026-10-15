@@ -4,8 +4,7 @@ local TableUtils = require(script.Parent.Parent.Utils.TableUtils)
 local Signal = require(script.Parent.Parent.Packages.Signal)
 local UserInputService = game:GetService('UserInputService')
 local GuiInputService = require(script.Parent.Parent.Services.GuiInputService)
-local TransitionService = require(script.Parent.Parent.Services.TransitionService)
-local TransitionGroup = require(script.Parent.Parent.Services.TransitionService.TransitionGroup)
+local Transition = require(script.Parent.Parent.Services.TransitionService.Transition)
 
 type base = Frame & {
 	View: ScrollingFrame,
@@ -24,11 +23,11 @@ type ScrollViewProps = {
 	ScrollingDirection: Enum.ScrollingDirection,
 	ScrollingEnabled: boolean,
 	ScrollBarThickness: number,
-	TransitionGroups: {
-		ShowVScrollBar: TransitionGroup.TransitionGroup,
-		HideVScrollBar: TransitionGroup.TransitionGroup,
-		ShowHScrollBar: TransitionGroup.TransitionGroup,
-		HideHScrollBar: TransitionGroup.TransitionGroup,
+	Transitions: {
+		ShowVScrollBar: Transition.Transition,
+		HideVScrollBar: Transition.Transition,
+		ShowHScrollBar: Transition.Transition,
+		HideHScrollBar: Transition.Transition,
 	},
 	_connections: { RBXScriptConnection },
 	_verticalHideThread: thread?,
@@ -56,29 +55,7 @@ end
 local TRACK_TRANSPARENCY = 0.9
 local THUMB_TRANSPARENCY = 0.8
 
-local _basePreset = {
-	Time = 0.25,
-	EasingStyle = Enum.EasingStyle.Cubic,
-	EasingDirection = Enum.EasingDirection.Out,
-}
-local ShowScrollBarPreset = {
-	_base = _basePreset,
-	Track = {
-		PropertyTable = { BackgroundTransparency = TRACK_TRANSPARENCY },
-	},
-	Thumb = {
-		PropertyTable = { BackgroundTransparency = THUMB_TRANSPARENCY },
-	},
-} :: TransitionGroup.Preset
-local HideScrollBarPreset = {
-	_base = _basePreset,
-	Track = {
-		PropertyTable = { BackgroundTransparency = 1 },
-	},
-	Thumb = {
-		PropertyTable = { BackgroundTransparency = 1 },
-	},
-} :: TransitionGroup.Preset
+local TWEEN_INFO = TweenInfo.new(0.25, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out)
 
 local BaseBlueprint = Blueprint.new({
 	ClassName = 'Frame',
@@ -232,25 +209,41 @@ function ScrollView.new(options: ScrollViewOptions?): ScrollView
 
 	ThemeService.Update()
 
-	local transitionGroups = {
-		ShowVScrollBar = TransitionService.CreateGroup(
-			{ Track = vScrollBarTrack, Thumb = vScrollBarThumb },
-			ShowScrollBarPreset
-		),
-		HideVScrollBar = TransitionService.CreateGroup(
-			{ Track = vScrollBarTrack, Thumb = vScrollBarThumb },
-			HideScrollBarPreset
-		),
-		ShowHScrollBar = TransitionService.CreateGroup(
-			{ Track = hScrollBarTrack, Thumb = hScrollBarThumb },
-			ShowScrollBarPreset
-		),
-		HideHScrollBar = TransitionService.CreateGroup(
-			{ Track = hScrollBarTrack, Thumb = hScrollBarThumb },
-			HideScrollBarPreset
-		),
+	local transitions = {
+		ShowVScrollBar = Transition.new({
+			[vScrollBarTrack] = {
+				BackgroundTransparency = TRACK_TRANSPARENCY,
+			},
+			[vScrollBarThumb] = {
+				BackgroundTransparency = THUMB_TRANSPARENCY,
+			},
+		}, TWEEN_INFO),
+		HideVScrollBar = Transition.new({
+			[vScrollBarTrack] = {
+				BackgroundTransparency = 1,
+			},
+			[vScrollBarThumb] = {
+				BackgroundTransparency = 1,
+			},
+		}, TWEEN_INFO),
+		ShowHScrollBar = Transition.new({
+			[hScrollBarTrack] = {
+				BackgroundTransparency = TRACK_TRANSPARENCY,
+			},
+			[hScrollBarThumb] = {
+				BackgroundTransparency = THUMB_TRANSPARENCY,
+			},
+		}, TWEEN_INFO),
+		HideHScrollBar = Transition.new({
+			[hScrollBarTrack] = {
+				BackgroundTransparency = 1,
+			},
+			[hScrollBarThumb] = {
+				BackgroundTransparency = 1,
+			},
+		}, TWEEN_INFO),
 	}
-	self.TransitionGroups = transitionGroups
+	self.Transitions = transitions
 
 	GuiInputService.Register(vScrollBar, { RequireOnTop = { IgnoreList = { vScrollBarTrack } } })
 	GuiInputService.Register(vScrollBarThumb, { RequireOnTop = true })
@@ -328,11 +321,11 @@ function ScrollView.new(options: ScrollViewOptions?): ScrollView
 
 		vScrollBarVisible = true
 
-		transitionGroups.ShowVScrollBar:ReplayAll()
+		transitions.ShowVScrollBar:Play()
 	end
 
 	local function _hideVScrollBarFunc()
-		transitionGroups.HideVScrollBar:ReplayAll()
+		transitions.HideVScrollBar:Play()
 	end
 
 	local function hideVScrollBar()
@@ -351,11 +344,11 @@ function ScrollView.new(options: ScrollViewOptions?): ScrollView
 
 		hScrollBarVisible = true
 
-		transitionGroups.ShowHScrollBar:ReplayAll()
+		transitions.ShowHScrollBar:Play()
 	end
 
 	local function _hideHScrollBarFunc()
-		self.TransitionGroups.HideHScrollBar:ReplayAll()
+		self.Transitions.HideHScrollBar:Play()
 	end
 
 	local function hideHScrollBar()

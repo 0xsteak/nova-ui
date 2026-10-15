@@ -3,18 +3,16 @@ local Blueprint = require(script.Parent.Parent.Parent.Classes.Blueprint)
 local Icon = require(script.Parent.Parent.Parent.Classes.Icon)
 local GuiInputService = require(script.Parent.Parent.Parent.Services.GuiInputService)
 local ThemeService = require(script.Parent.Parent.Parent.Services.ThemeService)
-local TransitionService = require(script.Parent.Parent.Parent.Services.TransitionService)
 local Transition = require(script.Parent.Parent.Parent.Services.TransitionService.Transition)
-local TransitionGroup = require(script.Parent.Parent.Parent.Services.TransitionService.TransitionGroup)
 
 type IconButtonProps = {
 	ClassName: 'NovaUI.IconButton',
 	Base: base,
 	Button: Button.Button,
-	TransitionGroups: {
-		Idle: TransitionGroup.TransitionGroup,
-		Hover: TransitionGroup.TransitionGroup,
-		MouseDown: TransitionGroup.TransitionGroup,
+	Transitions: {
+		Idle: Transition.Transition,
+		Hover: Transition.Transition,
+		MouseDown: Transition.Transition,
 	},
 	State: State,
 }
@@ -37,52 +35,7 @@ function IconButton.__tostring(self: IconButton)
 	return IconButton.ClassName
 end
 
-local _basePreset = {
-	Time = 0.25,
-	EasingStyle = Enum.EasingStyle.Quad,
-	EasingDirection = Enum.EasingDirection.Out,
-}
-
-local IdlePreset: TransitionGroup.Preset = {
-	_base = _basePreset,
-	Button = {
-		PropertyTable = {
-			BackgroundTransparency = 1,
-		} :: Transition.PropertyTable<CanvasGroup>,
-	},
-	Icon = {
-		PropertyTable = function()
-			return {
-				ImageTransparency = 0.25,
-			} :: Transition.PropertyTable<ImageLabel>
-		end,
-	},
-}
-
-local HoverPreset: TransitionGroup.Preset = {
-	_base = _basePreset,
-	Button = {
-		PropertyTable = {
-			BackgroundTransparency = 0.8,
-		} :: Transition.PropertyTable<CanvasGroup>,
-	},
-	Icon = {
-		PropertyTable = function()
-			return {
-				ImageTransparency = 0,
-			} :: Transition.PropertyTable<ImageLabel>
-		end,
-	},
-}
-
-local MouseDownPreset: TransitionGroup.Preset = {
-	_base = _basePreset,
-	Button = {
-		PropertyTable = {
-			BackgroundTransparency = 0.9,
-		} :: Transition.PropertyTable<CanvasGroup>,
-	},
-}
+local TWEEN_INFO = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local BaseBlueprint = Blueprint.new({
 	ClassName = 'Folder',
@@ -108,29 +61,29 @@ local function setState(self: IconButton, newState: State)
 
 	local oldState = self.State
 
-	local transitionGroups = self.TransitionGroups
-	local idleTransition = transitionGroups.Idle
-	local hoverTransition = transitionGroups.Hover
-	local mouseDownTransition = transitionGroups.MouseDown
+	local transitions = self.Transitions
+	local idleTransition = transitions.Idle
+	local hoverTransition = transitions.Hover
+	local mouseDownTransition = transitions.MouseDown
 
 	-- leave
 	if oldState == 'Idle' then
-		idleTransition:ApplyAll()
+		idleTransition:Apply()
 	elseif oldState == 'Hover' then
-		hoverTransition:ApplyAll()
+		hoverTransition:Apply()
 	elseif oldState == 'MouseDown' then
-		mouseDownTransition:ApplyAll()
+		mouseDownTransition:Apply()
 	end
 
 	self.State = newState
 
 	-- enter
 	if newState == 'Idle' then
-		idleTransition:ReplayAll()
+		idleTransition:Play()
 	elseif newState == 'Hover' then
-		hoverTransition:ReplayAll()
+		hoverTransition:Play()
 	elseif newState == 'MouseDown' then
-		mouseDownTransition:ReplayAll()
+		mouseDownTransition:Play()
 	elseif newState == 'Disabled' then
 		self.Base.Icon.ImageTransparency = 0.5
 	end
@@ -157,15 +110,29 @@ function IconButton.new(icon: Icon.Icon, callback: (() -> ())?, buttonSize: UDim
 	base.Size = buttonSize or UDim2.new(0, 25, 0, 25)
 	buttonIcon.Size = iconSize or UDim2.new(0, 16, 0, 16)
 
-	local idleTransition = TransitionService.CreateGroup({ Button = base, Icon = buttonIcon }, IdlePreset, { 'Theme' })
-	local hoverTransition = TransitionService.CreateGroup(
-		{ Button = base, Icon = buttonIcon },
-		HoverPreset,
-		{ 'Theme' }
-	)
-	local mouseDownTransition = TransitionService.CreateGroup({ Button = base }, MouseDownPreset, { 'Theme' })
+	local idleTransition = Transition.new({
+		[base] = {
+			BackgroundTransparency = 1,
+		},
+		[buttonIcon] = {
+			ImageTransparency = 0.25,
+		},
+	}, TWEEN_INFO)
+	local hoverTransition = Transition.new({
+		[base] = {
+			BackgroundTransparency = 0.8,
+		},
+		[buttonIcon] = {
+			ImageTransparency = 0,
+		},
+	}, TWEEN_INFO)
+	local mouseDownTransition = Transition.new({
+		[base] = {
+			BackgroundTransparency = 0.9,
+		},
+	}, TWEEN_INFO)
 
-	self.TransitionGroups = {
+	self.Transitions = {
 		Idle = idleTransition,
 		Hover = hoverTransition,
 		MouseDown = mouseDownTransition,
@@ -188,7 +155,7 @@ function IconButton.new(icon: Icon.Icon, callback: (() -> ())?, buttonSize: UDim
 	ThemeService.Update()
 
 	self.State = 'Idle'
-	idleTransition:ApplyAll()
+	idleTransition:Apply()
 
 	local isMouseDown = false
 	local isMouseOnObject = false

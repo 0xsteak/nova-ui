@@ -1,35 +1,8 @@
 local Transition = require(script.Transition)
-local TransitionGroup = require(script.TransitionGroup)
 
 local TransitionService = {}
 
 local TagCollection: { [string]: { [Transition.Transition]: true } } = {}
-
-function TransitionService.Create(target: Instance, preset: Transition.Preset, tags: { string }?): Transition.Transition
-	local transition = Transition.new(target, preset)
-
-	for _, tag in tags or {} do
-		TransitionService.AddTag(transition, tag)
-	end
-
-	return transition
-end
-
-function TransitionService.CreateGroup(
-	targets: { [string]: Instance },
-	preset: TransitionGroup.Preset,
-	tags: { string }?
-): TransitionGroup.TransitionGroup
-	local transitionGroup = TransitionGroup.new(targets, preset)
-
-	for _, tag in tags or {} do
-		for _, transition in transitionGroup.Transitions do
-			TransitionService.AddTag(transition, tag)
-		end
-	end
-
-	return transitionGroup
-end
 
 function TransitionService.AddTag(transition: Transition.Transition, tag: string)
 	local tagged = TagCollection[tag]
